@@ -13,6 +13,8 @@ export type Pacing = 'accelerating' | 'steady' | 'reinforcing';
 export interface SelectTopicsResult {
   selections: TopicSelection[];
   pacing: Pacing;
+  /** Primary new topic IDs that should be excluded in multi-day batches (not fill-ins) */
+  primaryNewTopicIds: string[];
 }
 
 /**
@@ -118,6 +120,9 @@ export async function selectTopics(
     .sort((a, b) => a.order - b.order)
     .slice(0, newCount);
 
+  // Track only these primary new topics for multi-day exclusion
+  const primaryNewTopicIds = newTopics.map((t) => t.id);
+
   for (const topic of newTopics) {
     selections.push({
       topic,
@@ -150,10 +155,11 @@ export async function selectTopics(
   selections.push(...reviewCandidates);
 
   // If we don't have enough review topics, fill with more new ones
+  // These fill-ins are NOT added to primaryNewTopicIds so they can be reused across days
   if (selections.length < totalQuestions) {
     const existingIds = new Set(selections.map((s) => s.topic.id));
     const extras = topics
-      .filter((t) => !existingIds.has(t.id) && !excludeNewTopicIds?.has(t.id))
+      .filter((t) => !existingIds.has(t.id))
       .sort((a, b) => a.order - b.order)
       .slice(0, totalQuestions - selections.length);
 
@@ -169,6 +175,7 @@ export async function selectTopics(
   return {
     selections: selections.slice(0, totalQuestions),
     pacing,
+    primaryNewTopicIds,
   };
 }
 

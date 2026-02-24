@@ -72,17 +72,15 @@ export async function POST(request: NextRequest) {
         );
         selections = result.selections;
         pacing = result.pacing;
+
+        // Only exclude primary frontier new topics, not fill-ins
+        for (const id of result.primaryNewTopicIds) {
+          excludeNewTopicIds.add(id);
+        }
       }
 
       if (selections.length === 0) {
         continue;
-      }
-
-      // Track new topics for exclusion in subsequent days
-      for (const s of selections) {
-        if (s.reason === 'new') {
-          excludeNewTopicIds.add(s.topic.id);
-        }
       }
 
       // Build reason lookup

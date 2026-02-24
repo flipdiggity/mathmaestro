@@ -413,7 +413,7 @@ function GeneratePageInner() {
   // ------------------------------------------------------------------
   // Render worksheet result card
   // ------------------------------------------------------------------
-  function renderWorksheetCard(ws: GeneratedWorksheet, showDay?: boolean) {
+  function renderWorksheetCard(ws: GeneratedWorksheet, isBatch?: boolean) {
     const hasNew = ws.questions.some((q) => q.section === 'new');
     const hasReview = ws.questions.some((q) => q.section === 'review');
     const hasSections = hasNew && hasReview;
@@ -424,7 +424,7 @@ function GeneratePageInner() {
       <Card key={ws.id}>
         <CardHeader>
           <CardTitle className="text-xl">
-            {showDay ? `${ws.dayOfWeek}: ` : ''}{ws.title}
+            {isBatch ? `${ws.dayOfWeek}: ` : ''}{ws.title}
           </CardTitle>
           <CardDescription>
             {ws.dayOfWeek} &middot; Week {ws.weekNumber} &middot;{' '}
@@ -490,16 +490,43 @@ function GeneratePageInner() {
           </div>
         </CardContent>
 
-        <CardFooter className="flex gap-3">
-          <Button asChild>
-            <a href={`/api/worksheets/${ws.id}/pdf`}>
-              <FileDown className="mr-1.5 h-4 w-4" />
-              Download PDF
-            </a>
-          </Button>
-        </CardFooter>
+        {/* Only show per-card PDF button for single worksheets */}
+        {!isBatch && (
+          <CardFooter className="flex gap-3">
+            <Button asChild>
+              <a href={`/api/worksheets/${ws.id}/pdf`}>
+                <FileDown className="mr-1.5 h-4 w-4" />
+                Download PDF
+              </a>
+            </Button>
+          </CardFooter>
+        )}
       </Card>
     );
+  }
+
+  // ------------------------------------------------------------------
+  // Download combined batch PDF
+  // ------------------------------------------------------------------
+  async function handleBatchPdfDownload() {
+    const ids = batchWorksheets.map((ws) => ws.id);
+    try {
+      const res = await fetch('/api/worksheets/batch-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worksheetIds: ids }),
+      });
+      if (!res.ok) throw new Error('PDF download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `worksheets_week.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'PDF download failed');
+    }
   }
 
   // ------------------------------------------------------------------
@@ -510,6 +537,14 @@ function GeneratePageInner() {
       <div className="min-h-screen bg-background py-10 px-4">
         <div className="mx-auto max-w-2xl space-y-6">
           <PacingBanner />
+
+          {/* Combined download button for batch */}
+          {batchWorksheets.length > 1 && (
+            <Button size="lg" className="w-full" onClick={handleBatchPdfDownload}>
+              <FileDown className="mr-1.5 h-4 w-4" />
+              Download All {batchWorksheets.length} Worksheets (1 PDF)
+            </Button>
+          )}
 
           {worksheet && renderWorksheetCard(worksheet)}
 
