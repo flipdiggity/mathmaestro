@@ -50,6 +50,12 @@ export default function RootLayout({
               >
                 Grade
               </Link>
+              <Link
+                href="/worksheets"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                History
+              </Link>
             </div>
           </div>
         </nav>
