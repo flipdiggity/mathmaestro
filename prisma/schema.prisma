@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Child {
+  id             String         @id @default(cuid())
+  name           String
+  grade          Int
+  track          String         // e.g. "accelerated", "standard"
+  targetTestDate DateTime?
+  createdAt      DateTime       @default(now())
+  worksheets     Worksheet[]
+  topicMastery   TopicMastery[]
+}
+
+model Worksheet {
+  id            String         @id @default(cuid())
+  childId       String
+  child         Child          @relation(fields: [childId], references: [id])
+  title         String
+  weekNumber    Int?
+  dayOfWeek     String?        // "Monday", "Tuesday", etc.
+  questionsJson String         // JSON array of questions with answers
+  topicIdsJson  String         // JSON array of topic IDs covered
+  status        String         @default("generated") // generated, printed, graded
+  createdAt     DateTime       @default(now())
+  gradingResult GradingResult?
+}
+
+model GradingResult {
+  id             String   @id @default(cuid())
+  worksheetId    String   @unique
+  worksheet      Worksheet @relation(fields: [worksheetId], references: [id])
+  photoUrl       String?
+  totalQuestions  Int
+  correctCount   Int
+  scorePercent   Float
+  resultsJson    String   // JSON array of per-question results
+  createdAt      DateTime @default(now())
+}
+
+model TopicMastery {
+  id              String   @id @default(cuid())
+  childId         String
+  child           Child    @relation(fields: [childId], references: [id])
+  topicId         String
+  topicName       String
+  gradeLevel      Int
+  mastery         Float    @default(0) // 0-100
+  timesPracticed  Int      @default(0)
+  lastPracticedAt DateTime?
+  lastScore       Float?
+
+  @@unique([childId, topicId])
+}

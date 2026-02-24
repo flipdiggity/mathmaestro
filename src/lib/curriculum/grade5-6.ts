@@ -1,0 +1,495 @@
+import { GradeCurriculum } from './types';
+
+export const grade56Curriculum: GradeCurriculum = {
+  grade: 6,
+  label: '5th-6th Grade Bridge (Eliana)',
+  topics: [
+    // ─── Number & Operations ────────────────────────────────────────────
+    {
+      id: '6.ns.1',
+      tpiCode: '6.2A',
+      name: 'Classifying Rational Numbers',
+      description:
+        'Classify whole numbers, integers, and rational numbers using a visual representation such as a Venn diagram to describe relationships between sets of numbers.',
+      gradeLevel: 6,
+      strand: 'Number & Operations',
+      difficulty: 1,
+      prerequisites: [],
+      sampleProblems: [
+        'Place the numbers -3, 0, 2/5, 7, and -1.8 in the correct region of a Venn diagram showing whole numbers, integers, and rational numbers.',
+        'Is every whole number also an integer? Is every integer also a rational number? Explain.',
+        'Give an example of a rational number that is NOT an integer.',
+      ],
+      isVerifiable: true,
+      order: 1,
+    },
+    {
+      id: '6.ns.2',
+      tpiCode: '6.2B',
+      name: 'Comparing & Ordering Rational Numbers',
+      description:
+        'Identify a number, its opposite, and its absolute value. Compare and order rational numbers, including integers, fractions, and decimals, and locate them on a number line.',
+      gradeLevel: 6,
+      strand: 'Number & Operations',
+      difficulty: 1,
+      prerequisites: ['6.ns.1'],
+      sampleProblems: [
+        'Order from least to greatest: -2.5, 3/4, -1, 0, 2.1',
+        'Which is greater, -3/8 or -5/8? Explain using a number line.',
+        'Plot -4, 1.5, -0.75, and 3 on a number line and label each point.',
+      ],
+      isVerifiable: true,
+      order: 2,
+    },
+    {
+      id: '6.ns.3',
+      tpiCode: '6.2C',
+      name: 'Absolute Value',
+      description:
+        'Locate, compare, and order integers and rational numbers using a number line. Understand absolute value as distance from zero and apply it to real-world situations.',
+      gradeLevel: 6,
+      strand: 'Number & Operations',
+      difficulty: 2,
+      prerequisites: ['6.ns.2'],
+      sampleProblems: [
+        'What is the absolute value of -12? What is |7|?',
+        'A submarine is at -250 feet and a bird is at 130 feet. Which is farther from sea level? Use absolute value to explain.',
+        'Order the following from least to greatest absolute value: 5, -8, 3, -1, -6',
+      ],
+      isVerifiable: true,
+      order: 3,
+    },
+    {
+      id: '6.ns.4',
+      tpiCode: '6.3B',
+      name: 'Multiplying & Dividing Fractions',
+      description:
+        'Determine, with and without computation, whether a quantity is increased or decreased when multiplied by a fraction. Multiply and divide positive rational numbers fluently.',
+      gradeLevel: 6,
+      strand: 'Number & Operations',
+      difficulty: 2,
+      prerequisites: ['6.ns.1'],
+      sampleProblems: [
+        'Compute: 3/4 x 2/5',
+        'A recipe calls for 2/3 cup of sugar. If you make 1 1/2 batches, how much sugar do you need?',
+        'Divide: 5/6 / 2/3. Show your work.',
+      ],
+      isVerifiable: true,
+      order: 4,
+    },
+    {
+      id: '6.ns.5',
+      tpiCode: '6.3E',
+      name: 'Operations with Decimals',
+      description:
+        'Add, subtract, multiply, and divide positive decimals fluently using the standard algorithms. Apply operations to solve real-world problems.',
+      gradeLevel: 6,
+      strand: 'Number & Operations',
+      difficulty: 2,
+      prerequisites: ['6.ns.1'],
+      sampleProblems: [
+        'Calculate: 12.45 x 3.6',
+        'A ribbon is 8.25 meters long. If you cut it into pieces that are each 0.75 meters long, how many pieces can you make?',
+        'Evaluate: 100.5 - 37.84 + 6.009',
+      ],
+      isVerifiable: true,
+      order: 5,
+    },
+
+    // ─── Ratios & Rates ─────────────────────────────────────────────────
+    {
+      id: '6.rr.1',
+      tpiCode: '6.4B',
+      name: 'Understanding Ratios',
+      description:
+        'Apply qualitative and quantitative reasoning to solve prediction and comparison of real-world problems involving ratios. Represent ratios using concrete models, fractions, and notation such as a:b.',
+      gradeLevel: 6,
+      strand: 'Ratios & Rates',
+      difficulty: 1,
+      prerequisites: [],
+      sampleProblems: [
+        'In a class of 30 students, 12 are boys. Write the ratio of boys to girls in three different ways.',
+        'A bag has 5 red marbles and 8 blue marbles. What is the ratio of red marbles to total marbles?',
+        'If the ratio of cats to dogs at a shelter is 3:5 and there are 24 cats, how many dogs are there?',
+      ],
+      isVerifiable: true,
+      order: 6,
+    },
+    {
+      id: '6.rr.2',
+      tpiCode: '6.4C',
+      name: 'Rates & Unit Rates',
+      description:
+        'Give examples of rates as the comparison by division of two quantities having different attributes. Calculate unit rates from real-world situations.',
+      gradeLevel: 6,
+      strand: 'Ratios & Rates',
+      difficulty: 2,
+      prerequisites: ['6.rr.1'],
+      sampleProblems: [
+        'A car travels 210 miles in 3.5 hours. What is its unit rate in miles per hour?',
+        'Store A sells 5 apples for $3.75. Store B sells 8 apples for $5.60. Which store has the better unit price?',
+        'Maya reads 42 pages in 1.5 hours. At that rate, how many pages will she read in 4 hours?',
+      ],
+      isVerifiable: true,
+      order: 7,
+    },
+    {
+      id: '6.rr.3',
+      tpiCode: '6.4D',
+      name: 'Ratio Tables & Equivalent Ratios',
+      description:
+        'Give examples of ratios and use ratio tables to represent equivalent ratios. Use additive and multiplicative reasoning to complete ratio tables and solve problems.',
+      gradeLevel: 6,
+      strand: 'Ratios & Rates',
+      difficulty: 2,
+      prerequisites: ['6.rr.1'],
+      sampleProblems: [
+        'Complete the ratio table if the ratio of lemonade mix to water is 3:8. Cups of mix: 3, 6, 9, ___. Cups of water: 8, ___, ___, 32.',
+        'A recipe uses 2 cups of flour for every 5 cookies. Complete a ratio table to find how much flour is needed for 30 cookies.',
+        'Are the ratios 4:6 and 10:15 equivalent? Use a ratio table to justify your answer.',
+      ],
+      isVerifiable: true,
+      order: 8,
+    },
+    {
+      id: '6.rr.4',
+      tpiCode: '6.4H',
+      name: 'Converting Units Using Ratios',
+      description:
+        'Convert units within a measurement system, including the use of proportions and unit rates. Apply ratio reasoning to convert between customary and metric units.',
+      gradeLevel: 6,
+      strand: 'Ratios & Rates',
+      difficulty: 3,
+      prerequisites: ['6.rr.2'],
+      sampleProblems: [
+        'Convert 5.5 kilometers to meters using a ratio.',
+        'If 1 inch = 2.54 cm, how many centimeters are in 8 inches?',
+        'A pool holds 12,000 gallons. How many quarts is that? (1 gallon = 4 quarts)',
+      ],
+      isVerifiable: true,
+      order: 9,
+    },
+
+    // ─── Expressions & Equations ────────────────────────────────────────
+    {
+      id: '6.ee.1',
+      tpiCode: '6.7A',
+      name: 'Order of Operations',
+      description:
+        'Generate equivalent numerical expressions using order of operations, including whole number exponents and prime factorization.',
+      gradeLevel: 6,
+      strand: 'Expressions & Equations',
+      difficulty: 1,
+      prerequisites: [],
+      sampleProblems: [
+        'Evaluate: 3 + 4 x 2^2 - (6 / 3)',
+        'Simplify: 5 x (8 - 3) + 2^3',
+        'Insert parentheses to make the equation true: 3 + 5 x 2 = 16',
+      ],
+      isVerifiable: true,
+      order: 10,
+    },
+    {
+      id: '6.ee.2',
+      tpiCode: '6.7B',
+      name: 'Evaluating Algebraic Expressions',
+      description:
+        'Distinguish between expressions and equations verbally, numerically, and algebraically. Evaluate expressions given specific values for variables.',
+      gradeLevel: 6,
+      strand: 'Expressions & Equations',
+      difficulty: 2,
+      prerequisites: ['6.ee.1'],
+      sampleProblems: [
+        'Evaluate 3x + 7 when x = 4.',
+        'If a = 5 and b = -2, find the value of 2a - 3b + 1.',
+        'A streaming service costs $8.99 per month plus $2.99 per extra screen. Write an expression for the monthly cost with s extra screens, then evaluate when s = 3.',
+      ],
+      isVerifiable: true,
+      order: 11,
+    },
+    {
+      id: '6.ee.3',
+      tpiCode: '6.7C',
+      name: 'Generating Equivalent Expressions',
+      description:
+        'Determine if two expressions are equivalent using concrete models, pictorial models, and algebraic representations. Apply properties of operations to generate equivalent expressions.',
+      gradeLevel: 6,
+      strand: 'Expressions & Equations',
+      difficulty: 2,
+      prerequisites: ['6.ee.2'],
+      sampleProblems: [
+        'Are 3(x + 4) and 3x + 12 equivalent? Use the distributive property to explain.',
+        'Write an equivalent expression for 6x + 10 by factoring.',
+        'Simplify: 4a + 3b + 2a - b',
+      ],
+      isVerifiable: true,
+      order: 12,
+    },
+    {
+      id: '6.ee.4',
+      tpiCode: '6.9A',
+      name: 'Writing Equations from Situations',
+      description:
+        'Write one-variable, one-step equations to represent constraints or conditions within real-world and mathematical problems.',
+      gradeLevel: 6,
+      strand: 'Expressions & Equations',
+      difficulty: 2,
+      prerequisites: ['6.ee.2'],
+      sampleProblems: [
+        'Eliana saved some money. After spending $14 on a book, she has $23 left. Write an equation to find how much she started with.',
+        'The perimeter of a square is 48 cm. Write an equation to find the side length.',
+        'Three friends split a restaurant bill equally. Each person paid $16. Write an equation for the total bill.',
+      ],
+      isVerifiable: true,
+      order: 13,
+    },
+    {
+      id: '6.ee.5',
+      tpiCode: '6.9B',
+      name: 'Solving One-Step Equations',
+      description:
+        'Determine the solutions of one-variable, one-step equations using concrete and pictorial models and inverse operations, including non-negative rational numbers.',
+      gradeLevel: 6,
+      strand: 'Expressions & Equations',
+      difficulty: 2,
+      prerequisites: ['6.ee.4'],
+      sampleProblems: [
+        'Solve for x: x + 15 = 42',
+        'Solve for n: 4n = 36.8',
+        'Solve for y: y / 3 = 7.5. Check your answer.',
+      ],
+      isVerifiable: true,
+      order: 14,
+    },
+
+    // ─── Coordinate Planes ──────────────────────────────────────────────
+    {
+      id: '6.cp.1',
+      tpiCode: '6.11A',
+      name: 'Plotting Ordered Pairs in All Four Quadrants',
+      description:
+        'Graph points in all four quadrants of the coordinate plane using ordered pairs of rational numbers.',
+      gradeLevel: 6,
+      strand: 'Coordinate Planes',
+      difficulty: 1,
+      prerequisites: ['6.ns.2'],
+      sampleProblems: [
+        'Plot the following points on a coordinate plane: A(3, 4), B(-2, 5), C(-4, -1), D(6, -3). Name the quadrant for each.',
+        'What are the coordinates of a point that is in Quadrant III and is 3 units from the y-axis and 5 units from the x-axis?',
+        'Reflect the point (4, -2) across the x-axis. What are the new coordinates?',
+      ],
+      isVerifiable: true,
+      order: 15,
+      requiresImage: true,
+      imageType: 'coordinate-plane',
+    },
+    {
+      id: '6.cp.2',
+      tpiCode: '6.11B',
+      name: 'Distances on the Coordinate Plane',
+      description:
+        'Determine the distance between two points on a coordinate plane with the same x-coordinate or the same y-coordinate, including using absolute value.',
+      gradeLevel: 6,
+      strand: 'Coordinate Planes',
+      difficulty: 2,
+      prerequisites: ['6.cp.1', '6.ns.3'],
+      sampleProblems: [
+        'Find the distance between the points (3, -4) and (3, 7).',
+        'Point A is at (-5, 2) and Point B is at (-5, -6). What is the distance between them?',
+        'Two points share the same y-coordinate: (8, -3) and (-2, -3). Find the distance between them using absolute value.',
+      ],
+      isVerifiable: true,
+      order: 16,
+      requiresImage: true,
+      imageType: 'coordinate-plane',
+    },
+
+    // ─── Proportionality (Percents) ─────────────────────────────────────
+    {
+      id: '6.pr.1',
+      tpiCode: '6.4E',
+      name: 'Fractions, Decimals & Percents Conversions',
+      description:
+        'Represent ratios and percents with concrete models, fractions, and decimals. Convert fluently between fractions, decimals, and percents.',
+      gradeLevel: 6,
+      strand: 'Proportionality',
+      difficulty: 1,
+      prerequisites: ['6.ns.1'],
+      sampleProblems: [
+        'Convert 3/8 to a decimal and a percent.',
+        'Write 0.045 as a fraction in simplest form and as a percent.',
+        'Order from least to greatest: 40%, 3/8, 0.39',
+      ],
+      isVerifiable: true,
+      order: 17,
+    },
+    {
+      id: '6.pr.2',
+      tpiCode: '6.4F',
+      name: 'Percent of a Number',
+      description:
+        'Represent benchmark percents and percent of a number using concrete and pictorial models. Solve problems involving finding a percent of a quantity.',
+      gradeLevel: 6,
+      strand: 'Proportionality',
+      difficulty: 2,
+      prerequisites: ['6.pr.1'],
+      sampleProblems: [
+        'What is 35% of 240?',
+        'A backpack originally costs $55. It is on sale for 20% off. What is the sale price?',
+        'Eliana scored 88% on a 50-question test. How many questions did she answer correctly?',
+      ],
+      isVerifiable: true,
+      order: 18,
+    },
+    {
+      id: '6.pr.3',
+      tpiCode: '6.4G',
+      name: 'Percent Problems (Part, Whole, Percent)',
+      description:
+        'Generate equivalent forms of fractions, decimals, and percents to solve problems finding the part, the whole, or the percent in real-world contexts.',
+      gradeLevel: 6,
+      strand: 'Proportionality',
+      difficulty: 3,
+      prerequisites: ['6.pr.2'],
+      sampleProblems: [
+        '18 is what percent of 72?',
+        'If 45% of a number is 27, what is the number?',
+        'A shirt costs $28 after a 30% discount. What was the original price?',
+      ],
+      isVerifiable: true,
+      order: 19,
+    },
+
+    // ─── Geometry ───────────────────────────────────────────────────────
+    {
+      id: '6.gm.1',
+      tpiCode: '6.8A',
+      name: 'Area of Triangles, Parallelograms & Trapezoids',
+      description:
+        'Model area formulas for parallelograms, trapezoids, and triangles by decomposing and rearranging parts. Use area formulas to solve real-world and mathematical problems.',
+      gradeLevel: 6,
+      strand: 'Geometry',
+      difficulty: 2,
+      prerequisites: [],
+      sampleProblems: [
+        'Find the area of a triangle with base 10 cm and height 7 cm.',
+        'A parallelogram has a base of 12 inches and a height of 5.5 inches. What is its area?',
+        'Find the area of a trapezoid with bases 8 m and 14 m and a height of 6 m.',
+      ],
+      isVerifiable: true,
+      order: 20,
+    },
+    {
+      id: '6.gm.2',
+      tpiCode: '6.8B',
+      name: 'Volume of Rectangular Prisms',
+      description:
+        'Model the relationship between the area of the base and volume of a rectangular prism. Use formulas to determine solutions for problems involving the volume of rectangular prisms with positive rational number edge lengths.',
+      gradeLevel: 6,
+      strand: 'Geometry',
+      difficulty: 2,
+      prerequisites: ['6.gm.1'],
+      sampleProblems: [
+        'Find the volume of a rectangular prism with length 4.5 cm, width 3 cm, and height 8 cm.',
+        'A fish tank is 24 inches long, 12 inches wide, and 16 inches tall. How many cubic inches of water can it hold?',
+        'A box has a volume of 360 cubic feet. Its length is 10 ft and width is 6 ft. What is the height?',
+      ],
+      isVerifiable: true,
+      order: 21,
+    },
+    {
+      id: '6.gm.3',
+      tpiCode: '6.8C',
+      name: 'Nets of 3D Figures',
+      description:
+        'Write equations that represent problems related to the area of rectangles, parallelograms, trapezoids, and triangles and volume of right rectangular prisms. Determine the surface area of rectangular prisms and triangular prisms using nets.',
+      gradeLevel: 6,
+      strand: 'Geometry',
+      difficulty: 3,
+      prerequisites: ['6.gm.1', '6.gm.2'],
+      sampleProblems: [
+        'Draw a net for a rectangular prism that is 5 cm long, 3 cm wide, and 2 cm tall. Find its surface area.',
+        'A cube has an edge length of 4 inches. What is its total surface area?',
+        'Which net folds into a triangular prism? Identify the shapes that make up the net and compute the surface area if the triangle has base 6 cm, height 4 cm, and the prism length is 10 cm.',
+      ],
+      isVerifiable: false,
+      order: 22,
+    },
+
+    // ─── Measurement ────────────────────────────────────────────────────
+    {
+      id: '6.ms.1',
+      tpiCode: '6.4H',
+      name: 'Converting Within Measurement Systems',
+      description:
+        'Convert units within a measurement system (customary or metric). Apply ratio and rate reasoning to solve measurement conversion problems.',
+      gradeLevel: 6,
+      strand: 'Measurement',
+      difficulty: 2,
+      prerequisites: ['6.rr.2'],
+      sampleProblems: [
+        'Convert 3.5 pounds to ounces.',
+        'How many milliliters are in 2.75 liters?',
+        'A fence is 216 inches long. How many feet and inches is that?',
+      ],
+      isVerifiable: true,
+      order: 23,
+    },
+
+    // ─── Data Analysis ──────────────────────────────────────────────────
+    {
+      id: '6.da.1',
+      tpiCode: '6.12A',
+      name: 'Mean, Median & Mode',
+      description:
+        'Represent numeric data graphically and use measures of center (mean, median, mode) and range to describe a set of data.',
+      gradeLevel: 6,
+      strand: 'Data Analysis',
+      difficulty: 1,
+      prerequisites: [],
+      sampleProblems: [
+        'Find the mean, median, and mode of: 12, 15, 11, 15, 19, 22, 15.',
+        'Eliana scored 88, 92, 76, 95, and 94 on five math tests. What is her mean score? What score does she need on the 6th test to have a mean of 90?',
+        'A data set has a median of 14 and a mean of 16. Give an example of such a data set with 5 values.',
+      ],
+      isVerifiable: true,
+      order: 24,
+    },
+    {
+      id: '6.da.2',
+      tpiCode: '6.12B',
+      name: 'Dot Plots & Stem-and-Leaf Plots',
+      description:
+        'Represent and interpret data using dot plots and stem-and-leaf plots. Use these representations to solve problems and draw conclusions.',
+      gradeLevel: 6,
+      strand: 'Data Analysis',
+      difficulty: 2,
+      prerequisites: ['6.da.1'],
+      sampleProblems: [
+        'The following are quiz scores: 78, 82, 85, 85, 90, 92, 82, 88, 85, 95. Create a dot plot and identify the mode.',
+        'Create a stem-and-leaf plot for: 34, 42, 38, 45, 41, 33, 47, 39, 36, 44. What is the median?',
+        'Looking at a stem-and-leaf plot with stems 5|6|7|8 and leaves, determine the range and median of the data.',
+      ],
+      isVerifiable: false,
+      order: 25,
+    },
+    {
+      id: '6.da.3',
+      tpiCode: '6.12C',
+      name: 'Box Plots',
+      description:
+        'Summarize numeric data with numerical summaries (minimum, first quartile, median, third quartile, maximum) and represent data using box plots. Use box plots to compare data sets.',
+      gradeLevel: 6,
+      strand: 'Data Analysis',
+      difficulty: 3,
+      prerequisites: ['6.da.1'],
+      sampleProblems: [
+        'Find the five-number summary for: 10, 14, 18, 22, 22, 25, 30, 35, 40. Then describe what a box plot of this data would look like.',
+        'A box plot shows: min = 50, Q1 = 60, median = 72, Q3 = 85, max = 98. What is the interquartile range?',
+        'Two classes took the same test. Class A has a median of 78 and IQR of 12. Class B has a median of 82 and IQR of 22. Which class performed more consistently? Explain.',
+      ],
+      isVerifiable: false,
+      order: 26,
+    },
+  ],
+};
