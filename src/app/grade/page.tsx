@@ -52,7 +52,7 @@ function GradePageContent() {
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
   const [selectedWorksheetId, setSelectedWorksheetId] = useState<string>('');
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(true);
   const [isLoadingWorksheets, setIsLoadingWorksheets] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
@@ -117,13 +117,13 @@ function GradePageContent() {
     fetchWorksheets();
   }, [selectedChildId]);
 
-  const handlePhotoSelected = useCallback((file: File) => {
-    setPhoto(file);
+  const handlePhotosChanged = useCallback((files: File[]) => {
+    setPhotos(files);
     setError(null);
   }, []);
 
   const handleGrade = useCallback(async () => {
-    if (!selectedWorksheetId || !photo) return;
+    if (!selectedWorksheetId || photos.length === 0) return;
 
     setIsGrading(true);
     setError(null);
@@ -131,7 +131,9 @@ function GradePageContent() {
     try {
       const formData = new FormData();
       formData.append('worksheetId', selectedWorksheetId);
-      formData.append('photo', photo);
+      for (const photo of photos) {
+        formData.append('photos', photo);
+      }
 
       const res = await fetch('/api/grade', {
         method: 'POST',
@@ -152,11 +154,11 @@ function GradePageContent() {
     } finally {
       setIsGrading(false);
     }
-  }, [selectedWorksheetId, photo]);
+  }, [selectedWorksheetId, photos]);
 
   const handleReset = useCallback(() => {
     setSelectedWorksheetId('');
-    setPhoto(null);
+    setPhotos([]);
     setGradingResult(null);
     setError(null);
   }, []);
@@ -318,15 +320,15 @@ function GradePageContent() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
-                  3. Upload Completed Worksheet Photo
+                  3. Upload Completed Worksheet Photos
                 </CardTitle>
                 <CardDescription>
-                  Take a photo of the completed worksheet or upload an image.
+                  Take photos of the completed worksheet or upload images. You can upload multiple pages.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <PhotoUpload
-                  onPhotoSelected={handlePhotoSelected}
+                  onPhotosChanged={handlePhotosChanged}
                   isLoading={isGrading}
                 />
               </CardContent>
@@ -341,7 +343,7 @@ function GradePageContent() {
           )}
 
           {/* Grade button */}
-          {selectedWorksheetId && photo && (
+          {selectedWorksheetId && photos.length > 0 && (
             <Button
               onClick={handleGrade}
               disabled={isGrading}

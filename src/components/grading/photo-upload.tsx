@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { Camera, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { Camera, Upload, Image as ImageIcon, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PhotoUploadProps {
-  onPhotoSelected: (file: File) => void;
+  onPhotosChanged: (files: File[]) => void;
   isLoading: boolean;
+}
+
+interface PhotoEntry {
+  file: File;
+  preview: string;
 }
 
 function formatFileSize(bytes: number): string {
@@ -15,21 +20,42 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function PhotoUpload({ onPhotoSelected, isLoading }: PhotoUploadProps) {
-  const [preview, setPreview] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+export function PhotoUpload({ onPhotosChanged, isLoading }: PhotoUploadProps) {
+  const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(
-    (file: File) => {
-      if (!file.type.startsWith('image/')) return;
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreview(url);
-      onPhotoSelected(file);
+  const addFiles = useCallback(
+    (files: FileList | File[]) => {
+      const imageFiles = Array.from(files).filter((f) =>
+        f.type.startsWith('image/')
+      );
+      if (imageFiles.length === 0) return;
+
+      const newEntries: PhotoEntry[] = imageFiles.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+
+      setPhotos((prev) => {
+        const updated = [...prev, ...newEntries];
+        onPhotosChanged(updated.map((p) => p.file));
+        return updated;
+      });
     },
-    [onPhotoSelected]
+    [onPhotosChanged]
+  );
+
+  const removePhoto = useCallback(
+    (index: number) => {
+      setPhotos((prev) => {
+        URL.revokeObjectURL(prev[index].preview);
+        const updated = prev.filter((_, i) => i !== index);
+        onPhotosChanged(updated.map((p) => p.file));
+        return updated;
+      });
+    },
+    [onPhotosChanged]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -49,69 +75,102 @@ export function PhotoUpload({ onPhotoSelected, isLoading }: PhotoUploadProps) {
       e.preventDefault();
       e.stopPropagation();
       setIsDragOver(false);
-
-      const file = e.dataTransfer.files?.[0];
-      if (file) handleFile(file);
+      if (e.dataTransfer.files?.length) {
+        addFiles(e.dataTransfer.files);
+      }
     },
-    [handleFile]
+    [addFiles]
   );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) handleFile(file);
+      if (e.target.files?.length) {
+        addFiles(e.target.files);
+      }
+      // Reset so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = '';
     },
-    [handleFile]
+    [addFiles]
   );
-
-  const handleChangePhoto = useCallback(() => {
-    if (preview) {
-      URL.revokeObjectURL(preview);
-    }
-    setPreview(null);
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [preview]);
 
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
-  // Show preview state
-  if (preview && selectedFile) {
+  // Photos have been selected — show thumbnail grid + add more button
+  if (photos.length > 0) {
     return (
       <div className="space-y-3">
-        <div className="relative rounded-lg border overflow-hidden bg-muted/30">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={preview}
-            alt="Worksheet photo preview"
-            className="w-full max-h-80 object-contain"
-          />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {photos.map((photo, index) => (
+            <div
+              key={`${photo.file.name}-${index}`}
+              className="relative group rounded-lg border overflow-hidden bg-muted/30"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photo.preview}
+                alt={`Page ${index + 1}`}
+                className="w-full aspect-[3/4] object-cover"
+              />
+              <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
+                Page {index + 1}
+              </div>
+              <button
+                type="button"
+                onClick={() => removePhoto(index)}
+                disabled={isLoading}
+                className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:pointer-events-none"
+              >
+                <X className="h-3 w-3" />
+              </button>
+              <div className="px-2 py-1 text-xs text-muted-foreground truncate">
+                {photo.file.name} ({formatFileSize(photo.file.size)})
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
-            <ImageIcon className="h-4 w-4 shrink-0" />
-            <span className="truncate">{selectedFile.name}</span>
-            <span className="shrink-0">({formatFileSize(selectedFile.size)})</span>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleChangePhoto}
-            disabled={isLoading}
-          >
-            <X className="h-3 w-3 mr-1" />
-            Change Photo
-          </Button>
+
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={openFilePicker}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openFilePicker();
+            }
+          }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`
+            flex items-center justify-center gap-2 rounded-lg border-2 border-dashed
+            p-4 cursor-pointer transition-colors
+            ${
+              isDragOver
+                ? 'border-primary bg-primary/5'
+                : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+            }
+            ${isLoading ? 'pointer-events-none opacity-50' : ''}
+          `}
+        >
+          <Plus className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            Add another page
+          </span>
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          {photos.length} {photos.length === 1 ? 'photo' : 'photos'} uploaded.
+          Upload pages in order (page 1 first).
+        </p>
+
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           capture="environment"
           onChange={handleInputChange}
           className="hidden"
@@ -120,7 +179,7 @@ export function PhotoUpload({ onPhotoSelected, isLoading }: PhotoUploadProps) {
     );
   }
 
-  // Show drop zone state
+  // Empty state — show drop zone
   return (
     <div>
       <div
@@ -154,10 +213,10 @@ export function PhotoUpload({ onPhotoSelected, isLoading }: PhotoUploadProps) {
           </div>
           <div className="text-center">
             <p className="text-sm font-medium">
-              Take a photo or upload an image
+              Take a photo or upload images
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Drag and drop, or click to select
+              Drag and drop, or click to select. You can upload multiple pages.
             </p>
           </div>
         </div>
@@ -170,7 +229,7 @@ export function PhotoUpload({ onPhotoSelected, isLoading }: PhotoUploadProps) {
             tabIndex={-1}
           >
             <Upload className="h-3 w-3 mr-1" />
-            Choose File
+            Choose Files
           </Button>
         </div>
       </div>
@@ -178,6 +237,7 @@ export function PhotoUpload({ onPhotoSelected, isLoading }: PhotoUploadProps) {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        multiple
         capture="environment"
         onChange={handleInputChange}
         className="hidden"

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { gradeWithVision } from '@/lib/anthropic';
+import { gradeWithMultipleImages } from '@/lib/anthropic';
 import { buildGradePrompt } from '@/lib/prompts/grade-worksheet';
 import { updateMastery } from '@/lib/spaced-repetition';
 import { Question, GradingQuestionResult } from '@/types';
@@ -9,11 +9,19 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const worksheetId = formData.get('worksheetId') as string;
-    const photo = formData.get('photo') as File;
 
-    if (!worksheetId || !photo) {
+    // Support multiple photos, with fallback to single 'photo' for backwards compatibility
+    let photoFiles = formData.getAll('photos').filter((f): f is File => f instanceof File);
+    if (photoFiles.length === 0) {
+      const singlePhoto = formData.get('photo');
+      if (singlePhoto instanceof File) {
+        photoFiles = [singlePhoto];
+      }
+    }
+
+    if (!worksheetId || photoFiles.length === 0) {
       return NextResponse.json(
-        { error: 'worksheetId and photo are required' },
+        { error: 'worksheetId and at least one photo are required' },
         { status: 400 }
       );
     }
@@ -30,19 +38,24 @@ export async function POST(request: NextRequest) {
 
     const questions: Question[] = JSON.parse(worksheet.questionsJson);
 
-    // Convert photo to base64
-    const bytes = await photo.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64 = buffer.toString('base64');
+    // Convert all photos to base64
+    const images = await Promise.all(
+      photoFiles.map(async (photo) => {
+        const bytes = await photo.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const base64 = buffer.toString('base64');
 
-    // Determine media type
-    let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg';
-    if (photo.type === 'image/png') mediaType = 'image/png';
-    else if (photo.type === 'image/webp') mediaType = 'image/webp';
+        let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg';
+        if (photo.type === 'image/png') mediaType = 'image/png';
+        else if (photo.type === 'image/webp') mediaType = 'image/webp';
+
+        return { base64, mediaType };
+      })
+    );
 
     // Build grading prompt and grade with vision
     const { system, prompt } = buildGradePrompt(questions);
-    const responseText = await gradeWithVision(base64, mediaType, prompt, { system });
+    const responseText = await gradeWithMultipleImages(images, prompt, { system });
 
     // Parse response
     let cleaned = responseText.trim();

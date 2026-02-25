@@ -15,13 +15,15 @@ Rules:
 - For word problems, accept answers with or without units if the number is correct
 - If you cannot read a student's answer, mark it as incorrect but note it was illegible
 - Be generous with formatting (commas in large numbers, extra spaces, etc.) but strict on mathematical correctness
-- Grade every question - do not skip any`;
+- Grade every question - do not skip any
+- The worksheet may span multiple pages/photos - look across ALL images for answers
+- Questions are numbered sequentially and may continue across pages (e.g., page 1 has Q1-Q15, page 2 has Q16-Q30)`;
 
   const prompt = `Grade this handwritten math worksheet. Here is the answer key:
 
 ${answerKey}
 
-Look at the student's handwritten answers in the photo and grade each one.
+Look at the student's handwritten answers across all photos and grade each one. The photos are provided in page order (page 1 first).
 
 Return ONLY valid JSON in this exact format (no markdown, no code fences):
 {
