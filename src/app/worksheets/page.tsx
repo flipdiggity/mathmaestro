@@ -106,10 +106,10 @@ function WorksheetHistoryContent() {
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChildId, setSelectedChildId] = useState('');
   const [worksheets, setWorksheets] = useState<Worksheet[]>([]);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isLoadingChildren, setIsLoadingChildren] = useState(true);
   const [isLoadingWorksheets, setIsLoadingWorksheets] = useState(false);
-  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchChildren() {
@@ -158,16 +158,11 @@ function WorksheetHistoryContent() {
   }, [selectedChildId]);
 
   const toggleExpanded = useCallback((id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
   const handleDownloadPdf = useCallback(async (ws: Worksheet) => {
-    setDownloadingIds((prev) => new Set(prev).add(ws.id));
+    setDownloadingId(ws.id);
     try {
       const res = await fetch(`/api/worksheets/${ws.id}/pdf`);
       if (!res.ok) throw new Error('Download failed');
@@ -181,11 +176,7 @@ function WorksheetHistoryContent() {
     } catch {
       // silently fail
     } finally {
-      setDownloadingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(ws.id);
-        return next;
-      });
+      setDownloadingId(null);
     }
   }, []);
 
@@ -279,9 +270,9 @@ function WorksheetHistoryContent() {
 
                     <div className="space-y-2">
                       {group.worksheets.map((ws) => {
-                        const isExpanded = expandedIds.has(ws.id);
+                        const isExpanded = expandedId === ws.id;
                         const questions = getQuestions(ws);
-                        const isDownloading = downloadingIds.has(ws.id);
+                        const isDownloading = downloadingId === ws.id;
 
                         return (
                           <Card key={ws.id}>
