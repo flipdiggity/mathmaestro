@@ -1,4 +1,4 @@
-import { GradeCurriculum } from './types';
+import { GradeCurriculum } from '../../../types';
 
 export const grade56Curriculum: GradeCurriculum = {
   grade: 6,

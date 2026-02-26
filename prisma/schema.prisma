@@ -3,8 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String        @id @default(cuid())
+  clerkId          String        @unique
+  email            String        @unique
+  name             String?
+  stripeCustomerId String?       @unique
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  children         Child[]
+  usageRecords     UsageRecord[]
 }
 
 model Child {
@@ -12,10 +24,16 @@ model Child {
   name           String
   grade          Int
   track          String         // e.g. "accelerated", "standard"
+  state          String         @default("TX")
+  district       String         @default("eanes-isd")
   targetTestDate DateTime?
   createdAt      DateTime       @default(now())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
   worksheets     Worksheet[]
   topicMastery   TopicMastery[]
+
+  @@index([userId])
 }
 
 model Worksheet {
@@ -57,4 +75,16 @@ model TopicMastery {
   lastScore       Float?
 
   @@unique([childId, topicId])
+}
+
+model UsageRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        String   // "generate" | "grade"
+  worksheetId String?
+  creditsCost Int
+  createdAt   DateTime @default(now())
+
+  @@index([userId, type])
 }

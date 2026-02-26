@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireUser } from '@/lib/auth';
+import { verifyChildOwnership } from '@/lib/ownership';
+import { checkUsageAllowance, recordUsage } from '@/lib/billing';
 import { generateText } from '@/lib/anthropic';
 import { selectTopics, type Pacing } from '@/lib/spaced-repetition';
 import { getTopicsForChild } from '@/lib/curriculum';
@@ -9,6 +12,7 @@ import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireUser();
     const body = await request.json();
     const {
       childId,
@@ -26,14 +30,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No days selected' }, { status: 400 });
     }
 
-    const child = await prisma.child.findUnique({ where: { id: childId } });
+    const child = await verifyChildOwnership(childId, user.id);
     if (!child) {
       return NextResponse.json({ error: 'Child not found' }, { status: 404 });
     }
 
-    const allTopics = getTopicsForChild(child.grade, child.track);
+    // Check billing for all worksheets in batch
+    for (let i = 0; i < days.length; i++) {
+      const allowed = await checkUsageAllowance(user.id, 'generate');
+      if (!allowed.allowed) {
+        return NextResponse.json(
+          { error: 'Usage limit reached', requiresPayment: true, message: allowed.message },
+          { status: 402 }
+        );
+      }
+    }
 
-    // Track which new topics have been assigned across days so they advance
+    const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
+
     const excludeNewTopicIds = new Set<string>();
     const worksheets: Array<{
       id: string;
@@ -47,12 +61,10 @@ export async function POST(request: NextRequest) {
     let pacing: Pacing = 'steady';
     const weekNumber = getWeekNumber(new Date());
 
-    // Generate one worksheet per day sequentially
     for (const day of days) {
       let selections;
 
       if (selectedTopicIds && selectedTopicIds.length > 0) {
-        // Manual topic selection - same topics each day but different questions
         const selectedTopics = allTopics.filter((t) =>
           selectedTopicIds.includes(t.id)
         );
@@ -62,7 +74,6 @@ export async function POST(request: NextRequest) {
           priority: 100,
         }));
       } else {
-        // Auto-select via spaced repetition with exclusions for advancing topics
         const result = await selectTopics(
           childId,
           allTopics,
@@ -73,7 +84,6 @@ export async function POST(request: NextRequest) {
         selections = result.selections;
         pacing = result.pacing;
 
-        // Only exclude primary frontier new topics, not fill-ins
         for (const id of result.primaryNewTopicIds) {
           excludeNewTopicIds.add(id);
         }
@@ -83,13 +93,11 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Build reason lookup
       const topicReasonMap = new Map<string, 'new' | 'review'>();
       for (const s of selections) {
         topicReasonMap.set(s.topic.id, s.reason);
       }
 
-      // Build image topic lookup
       const imageTopicMap = new Map<string, { requiresImage: boolean; imageType?: string }>();
       for (const t of allTopics) {
         if (t.requiresImage) {
@@ -121,7 +129,6 @@ export async function POST(request: NextRequest) {
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        // Skip this day if parsing fails
         continue;
       }
 
@@ -155,6 +162,8 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      await recordUsage(user.id, 'generate', worksheet.id);
+
       worksheets.push({
         id: worksheet.id,
         title: parsed.title,
@@ -174,6 +183,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ worksheets, pacing });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Batch generate error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Batch generation failed' },

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireUser } from '@/lib/auth';
 import { renderBatchWorksheetPDF } from '@/lib/pdf/render';
 import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireUser();
     const { worksheetIds }: { worksheetIds: string[] } = await request.json();
 
     if (!worksheetIds || worksheetIds.length === 0) {
@@ -17,8 +19,10 @@ export async function POST(request: NextRequest) {
       orderBy: { createdAt: 'asc' },
     });
 
-    if (worksheets.length === 0) {
-      return NextResponse.json({ error: 'No worksheets found' }, { status: 404 });
+    // Verify all worksheets belong to this user
+    const unauthorized = worksheets.some((ws) => ws.child.userId !== user.id);
+    if (unauthorized || worksheets.length === 0) {
+      return NextResponse.json({ error: 'Worksheets not found' }, { status: 404 });
     }
 
     const childName = worksheets[0].child.name;
@@ -30,7 +34,6 @@ export async function POST(request: NextRequest) {
 
     const pdfBuffer = await renderBatchWorksheetPDF(childName, days);
 
-    // Update all worksheets to printed
     await prisma.worksheet.updateMany({
       where: { id: { in: worksheetIds } },
       data: { status: 'printed' },
@@ -43,6 +46,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Batch PDF error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Batch PDF failed' },

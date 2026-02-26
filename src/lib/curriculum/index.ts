@@ -1,20 +1,49 @@
 import { CurriculumTopic, GradeCurriculum } from './types';
-import { grade3Curriculum } from './grade3';
-import { grade4Curriculum } from './grade4';
-import { grade56Curriculum } from './grade5-6';
-import { grade7Curriculum } from './grade7';
+import { DistrictConfig, eanesIsd } from './districts/tx/eanes-isd';
+import { grade3Curriculum } from './districts/tx/eanes-isd/grade-3';
+import { grade4Curriculum } from './districts/tx/eanes-isd/grade-4';
+import { grade56Curriculum } from './districts/tx/eanes-isd/grade-6';
+import { grade7Curriculum } from './districts/tx/eanes-isd/grade-7';
 
 export { type CurriculumTopic, type GradeCurriculum } from './types';
+export { type DistrictConfig } from './districts/tx/eanes-isd';
 
-const curriculumRegistry: Record<number, GradeCurriculum> = {
-  3: grade3Curriculum,
-  4: grade4Curriculum,
-  6: grade56Curriculum,
-  7: grade7Curriculum,
+// Registry: keyed by `${state}/${districtSlug}`
+const districtRegistry: Record<string, DistrictConfig> = {
+  'TX/eanes-isd': eanesIsd,
 };
 
-export function getCurriculum(grade: number): GradeCurriculum | undefined {
-  return curriculumRegistry[grade];
+// Grade curricula: keyed by `${state}/${districtSlug}/${grade}`
+const curriculumRegistry: Record<string, GradeCurriculum> = {
+  'TX/eanes-isd/3': grade3Curriculum,
+  'TX/eanes-isd/4': grade4Curriculum,
+  'TX/eanes-isd/6': grade56Curriculum,
+  'TX/eanes-isd/7': grade7Curriculum,
+};
+
+export function getDistrictConfig(
+  state: string = 'TX',
+  district: string = 'eanes-isd'
+): DistrictConfig | undefined {
+  return districtRegistry[`${state}/${district}`];
+}
+
+export function getAllDistricts(): DistrictConfig[] {
+  return Object.values(districtRegistry);
+}
+
+export function getDistrictsForState(state: string): DistrictConfig[] {
+  return Object.entries(districtRegistry)
+    .filter(([key]) => key.startsWith(`${state}/`))
+    .map(([, config]) => config);
+}
+
+export function getCurriculum(
+  grade: number,
+  state: string = 'TX',
+  district: string = 'eanes-isd'
+): GradeCurriculum | undefined {
+  return curriculumRegistry[`${state}/${district}/${grade}`];
 }
 
 export function getAllCurricula(): GradeCurriculum[] {
@@ -22,24 +51,30 @@ export function getAllCurricula(): GradeCurriculum[] {
 }
 
 /**
- * Get the appropriate topics for a child based on grade and track.
- * - Eliana (grade 5, accelerated): 6th grade + 7th grade first half
- * - Mylo (grade 3, accelerated): 3rd grade reinforcement + 4th grade preview
+ * Get the appropriate topics for a child based on grade, track, state, and district.
+ * Uses the district's acceleratedMapping to determine which additional grades to include.
  */
-export function getTopicsForChild(grade: number, track: string): CurriculumTopic[] {
-  if (grade === 5 && track === 'accelerated') {
-    // Eliana: 6th grade remaining + 7th grade first half
-    return [...grade56Curriculum.topics, ...grade7Curriculum.topics];
+export function getTopicsForChild(
+  grade: number,
+  track: string,
+  state: string = 'TX',
+  district: string = 'eanes-isd'
+): CurriculumTopic[] {
+  const districtConfig = districtRegistry[`${state}/${district}`];
+  if (!districtConfig) return [];
+
+  const key = (g: number) => `${state}/${district}/${g}`;
+  const baseCurriculum = curriculumRegistry[key(grade)];
+  const topics = baseCurriculum ? [...baseCurriculum.topics] : [];
+
+  if (track === 'accelerated' && districtConfig.acceleratedMapping?.[grade]) {
+    for (const extraGrade of districtConfig.acceleratedMapping[grade]) {
+      const extra = curriculumRegistry[key(extraGrade)];
+      if (extra) topics.push(...extra.topics);
+    }
   }
 
-  if (grade === 3 && track === 'accelerated') {
-    // Mylo: 3rd grade reinforcement + 4th grade preview
-    return [...grade3Curriculum.topics, ...grade4Curriculum.topics];
-  }
-
-  // Default: just the current grade
-  const curriculum = curriculumRegistry[grade];
-  return curriculum ? curriculum.topics : [];
+  return topics;
 }
 
 export function getTopicById(topicId: string): CurriculumTopic | undefined {
@@ -50,14 +85,23 @@ export function getTopicById(topicId: string): CurriculumTopic | undefined {
   return undefined;
 }
 
-export function getTopicsByStrand(grade: number, strand: string): CurriculumTopic[] {
-  const curriculum = curriculumRegistry[grade];
+export function getTopicsByStrand(
+  grade: number,
+  strand: string,
+  state: string = 'TX',
+  district: string = 'eanes-isd'
+): CurriculumTopic[] {
+  const curriculum = curriculumRegistry[`${state}/${district}/${grade}`];
   if (!curriculum) return [];
   return curriculum.topics.filter((t) => t.strand === strand);
 }
 
-export function getStrands(grade: number): string[] {
-  const curriculum = curriculumRegistry[grade];
+export function getStrands(
+  grade: number,
+  state: string = 'TX',
+  district: string = 'eanes-isd'
+): string[] {
+  const curriculum = curriculumRegistry[`${state}/${district}/${grade}`];
   if (!curriculum) return [];
   return Array.from(new Set(curriculum.topics.map((t) => t.strand)));
 }

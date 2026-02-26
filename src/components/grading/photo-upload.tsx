@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { Camera, Upload, Image as ImageIcon, X, Plus } from 'lucide-react';
+import { Camera, Upload, X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PhotoUploadProps {
@@ -93,8 +93,14 @@ export function PhotoUpload({ onPhotosChanged, isLoading }: PhotoUploadProps) {
     [addFiles]
   );
 
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click();
+  }, []);
+
+  const openCamera = useCallback(() => {
+    cameraInputRef.current?.click();
   }, []);
 
   // Photos have been selected — show thumbnail grid + add more button
@@ -167,11 +173,18 @@ export function PhotoUpload({ onPhotosChanged, isLoading }: PhotoUploadProps) {
         </p>
 
         <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleInputChange}
+          className="hidden"
+        />
+        <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
           multiple
-          capture="environment"
           onChange={handleInputChange}
           className="hidden"
         />
@@ -223,6 +236,17 @@ export function PhotoUpload({ onPhotosChanged, isLoading }: PhotoUploadProps) {
         <div className="flex items-center gap-2">
           <Button
             type="button"
+            variant="default"
+            size="sm"
+            className="sm:hidden bg-indigo-600"
+            tabIndex={-1}
+            onClick={(e) => { e.stopPropagation(); openCamera(); }}
+          >
+            <Camera className="h-3 w-3 mr-1" />
+            Take Photo
+          </Button>
+          <Button
+            type="button"
             variant="outline"
             size="sm"
             className="pointer-events-none"
@@ -233,12 +257,20 @@ export function PhotoUpload({ onPhotosChanged, isLoading }: PhotoUploadProps) {
           </Button>
         </div>
       </div>
+      {/* Camera-specific input for mobile */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleInputChange}
+        className="hidden"
+      />
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
         multiple
-        capture="environment"
         onChange={handleInputChange}
         className="hidden"
       />

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireUser } from '@/lib/auth';
+import { verifyWorksheetOwnership } from '@/lib/ownership';
 import { renderWorksheetPDF } from '@/lib/pdf/render';
 import { Question } from '@/types';
 
@@ -8,11 +10,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const worksheet = await prisma.worksheet.findUnique({
-      where: { id: params.id },
-      include: { child: true },
-    });
-
+    const user = await requireUser();
+    const worksheet = await verifyWorksheetOwnership(params.id, user.id);
     if (!worksheet) {
       return NextResponse.json({ error: 'Worksheet not found' }, { status: 404 });
     }
@@ -25,7 +24,6 @@ export async function GET(
       questions
     );
 
-    // Update status to printed
     await prisma.worksheet.update({
       where: { id: params.id },
       data: { status: 'printed' },
@@ -38,6 +36,9 @@ export async function GET(
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('PDF generation error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'PDF generation failed' },

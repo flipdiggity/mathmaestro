@@ -1,4 +1,4 @@
-import type { GradeCurriculum } from './types';
+import type { GradeCurriculum } from '../../../types';
 
 const grade3: GradeCurriculum = {
   grade: 3,

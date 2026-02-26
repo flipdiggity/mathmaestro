@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireUser } from '@/lib/auth';
+import { verifyWorksheetOwnership } from '@/lib/ownership';
+import { checkUsageAllowance, recordUsage } from '@/lib/billing';
 import { gradeWithMultipleImages } from '@/lib/anthropic';
 import { buildGradePrompt } from '@/lib/prompts/grade-worksheet';
 import { updateMastery } from '@/lib/spaced-repetition';
@@ -7,10 +10,10 @@ import { Question, GradingQuestionResult } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireUser();
     const formData = await request.formData();
     const worksheetId = formData.get('worksheetId') as string;
 
-    // Support multiple photos, with fallback to single 'photo' for backwards compatibility
     let photoFiles = formData.getAll('photos').filter((f): f is File => f instanceof File);
     if (photoFiles.length === 0) {
       const singlePhoto = formData.get('photo');
@@ -26,19 +29,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get worksheet with questions
-    const worksheet = await prisma.worksheet.findUnique({
-      where: { id: worksheetId },
-      include: { child: true },
-    });
-
+    // Verify ownership
+    const worksheet = await verifyWorksheetOwnership(worksheetId, user.id);
     if (!worksheet) {
       return NextResponse.json({ error: 'Worksheet not found' }, { status: 404 });
     }
 
+    // Check billing
+    const allowed = await checkUsageAllowance(user.id, 'grade');
+    if (!allowed.allowed) {
+      return NextResponse.json(
+        { error: 'Usage limit reached', requiresPayment: true, message: allowed.message },
+        { status: 402 }
+      );
+    }
+
     const questions: Question[] = JSON.parse(worksheet.questionsJson);
 
-    // Convert all photos to base64
     const images = await Promise.all(
       photoFiles.map(async (photo) => {
         const bytes = await photo.arrayBuffer();
@@ -53,11 +60,9 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    // Build grading prompt and grade with vision
     const { system, prompt } = buildGradePrompt(questions);
     const responseText = await gradeWithMultipleImages(images, prompt, { system });
 
-    // Parse response
     let cleaned = responseText.trim();
     if (cleaned.startsWith('```')) {
       cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
@@ -79,7 +84,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save grading result
     const gradingResult = await prisma.gradingResult.create({
       data: {
         worksheetId,
@@ -90,13 +94,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update worksheet status
     await prisma.worksheet.update({
       where: { id: worksheetId },
       data: { status: 'graded' },
     });
 
-    // Update mastery for each topic
+    // Record usage
+    await recordUsage(user.id, 'grade', worksheetId);
+
     const topicScores = new Map<string, { correct: number; total: number; name: string; grade: number }>();
     for (const result of gradingData.results) {
       const question = questions.find((q) => q.number === result.number);
@@ -114,7 +119,6 @@ export async function POST(request: NextRequest) {
       topicScores.set(question.topicId, existing);
     }
 
-    // Update mastery for each topic practiced
     for (const [topicId, scores] of Array.from(topicScores.entries())) {
       const scorePercent = (scores.correct / scores.total) * 100;
       await updateMastery(
@@ -136,6 +140,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Grading error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Grading failed' },

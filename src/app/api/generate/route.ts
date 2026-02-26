@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireUser } from '@/lib/auth';
+import { verifyChildOwnership } from '@/lib/ownership';
+import { checkUsageAllowance, recordUsage } from '@/lib/billing';
 import { generateText } from '@/lib/anthropic';
 import { selectTopics } from '@/lib/spaced-repetition';
 import { getTopicsForChild } from '@/lib/curriculum';
@@ -9,23 +12,32 @@ import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireUser();
     const body = await request.json();
     const { childId, questionCount = 30, selectedTopicIds } = body;
 
-    // Get child info
-    const child = await prisma.child.findUnique({ where: { id: childId } });
+    // Verify ownership
+    const child = await verifyChildOwnership(childId, user.id);
     if (!child) {
       return NextResponse.json({ error: 'Child not found' }, { status: 404 });
     }
 
+    // Check billing
+    const allowed = await checkUsageAllowance(user.id, 'generate');
+    if (!allowed.allowed) {
+      return NextResponse.json(
+        { error: 'Usage limit reached', requiresPayment: true, message: allowed.message },
+        { status: 402 }
+      );
+    }
+
     // Get curriculum topics for this child
-    const allTopics = getTopicsForChild(child.grade, child.track);
+    const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
 
     let selections;
     let pacing: 'accelerating' | 'steady' | 'reinforcing' = 'steady';
 
     if (selectedTopicIds && selectedTopicIds.length > 0) {
-      // Manual topic selection
       const selectedTopics = allTopics.filter((t) => selectedTopicIds.includes(t.id));
       selections = selectedTopics.map((t) => ({
         topic: t,
@@ -33,7 +45,6 @@ export async function POST(request: NextRequest) {
         priority: 100,
       }));
     } else {
-      // Auto-select via spaced repetition
       const result = await selectTopics(childId, allTopics, questionCount, child.targetTestDate);
       selections = result.selections;
       pacing = result.pacing;
@@ -43,13 +54,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No topics available for this child' }, { status: 400 });
     }
 
-    // Build a lookup from topicId -> reason for section tagging
     const topicReasonMap = new Map<string, 'new' | 'review'>();
     for (const s of selections) {
       topicReasonMap.set(s.topic.id, s.reason);
     }
 
-    // Build prompt and generate
     const { system, prompt } = buildGeneratePrompt(
       child.name,
       child.grade,
@@ -63,7 +72,6 @@ export async function POST(request: NextRequest) {
       maxTokens: 8192,
     });
 
-    // Parse response - handle potential markdown code fences
     let cleaned = responseText.trim();
     if (cleaned.startsWith('```')) {
       cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
@@ -79,10 +87,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify answers programmatically
     const verifiedQuestions = verifyWorksheetAnswers(parsed.questions);
 
-    // Build topics that require images
     const imageTopicMap = new Map<string, { requiresImage: boolean; imageType?: string }>();
     for (const t of allTopics) {
       if (t.requiresImage) {
@@ -91,9 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     const questions: Question[] = verifiedQuestions.map((q) => {
-      // Assign section from Claude's output, or fall back to the selection reason
       const section = q.section || topicReasonMap.get(q.topicId) || 'new';
-      // Assign grid info from Claude's output or from curriculum topic metadata
       const imgMeta = imageTopicMap.get(q.topicId);
       return {
         number: q.number,
@@ -109,13 +113,11 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Determine day of week
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const today = new Date();
     const dayOfWeek = days[today.getDay()];
     const weekNumber = getWeekNumber(today);
 
-    // Save to database
     const worksheet = await prisma.worksheet.create({
       data: {
         childId,
@@ -127,6 +129,9 @@ export async function POST(request: NextRequest) {
         status: 'generated',
       },
     });
+
+    // Record usage
+    await recordUsage(user.id, 'generate', worksheet.id);
 
     return NextResponse.json({
       worksheet: {
@@ -140,6 +145,9 @@ export async function POST(request: NextRequest) {
       pacing,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Generate error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Generation failed' },

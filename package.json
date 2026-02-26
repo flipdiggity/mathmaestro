@@ -1,5 +1,5 @@
 {
-  "name": "mathmaestro",
+  "name": "sharpsheet",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,12 +14,14 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@clerk/nextjs": "^6.38.2",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
     "@react-pdf/renderer": "^4.3.2",
+    "@stripe/stripe-js": "^8.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.575.0",
@@ -28,6 +30,7 @@
     "react": "^18",
     "react-dom": "^18",
     "sharp": "^0.34.5",
+    "stripe": "^20.4.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7"
   },
