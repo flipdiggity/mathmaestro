@@ -1,4 +1,5 @@
 import { prisma } from './db';
+import { isAdminEmail } from './admin';
 
 const FREE_GENERATES = 5;
 const FREE_GRADES = 5;
@@ -23,6 +24,11 @@ export async function checkUsageAllowance(
 ): Promise<{ allowed: boolean; message?: string }> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return { allowed: false, message: 'User not found' };
+
+  // Admin users bypass all billing limits
+  if (isAdminEmail(user.email)) {
+    return { allowed: true };
+  }
 
   const counts = await getUsageCounts(userId);
   const freeLimit = type === 'generate' ? FREE_GENERATES : FREE_GRADES;

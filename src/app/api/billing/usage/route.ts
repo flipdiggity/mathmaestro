@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { getUsageCounts } from '@/lib/billing';
+import { isAdminEmail } from '@/lib/admin';
 
 export async function GET() {
   try {
@@ -10,6 +11,7 @@ export async function GET() {
     return NextResponse.json({
       ...usage,
       hasPaymentMethod: !!user.stripeCustomerId,
+      isAdmin: isAdminEmail(user.email),
     });
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

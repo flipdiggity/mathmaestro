@@ -12,6 +12,7 @@ interface UsageData {
   freeGeneratesRemaining: number;
   freeGradesRemaining: number;
   hasPaymentMethod: boolean;
+  isAdmin?: boolean;
 }
 
 export default function BillingPage() {
@@ -87,37 +88,58 @@ export default function BillingPage() {
           </Card>
         </div>
 
-        {/* Payment Method */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base">Payment Method</CardTitle>
-                <CardDescription>
-                  Required after free tier (5 generates + 5 grades)
-                </CardDescription>
+        {/* Payment Method / Admin Badge */}
+        {usage?.isAdmin ? (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Account Status</CardTitle>
+                  <CardDescription>Administrator account</CardDescription>
+                </div>
+                <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200">
+                  Admin — Unlimited Access
+                </Badge>
               </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-500">
+                As an admin, you have unlimited access to all features with no billing limits.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">Payment Method</CardTitle>
+                  <CardDescription>
+                    Required after free tier (5 generates + 5 grades)
+                  </CardDescription>
+                </div>
+                {usage?.hasPaymentMethod ? (
+                  <Badge className="bg-green-100 text-green-800 border-green-200">Active</Badge>
+                ) : (
+                  <Badge variant="outline">Not set up</Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
               {usage?.hasPaymentMethod ? (
-                <Badge className="bg-green-100 text-green-800 border-green-200">Active</Badge>
+                <Button variant="outline" size="sm" onClick={handleManageBilling}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Manage in Stripe
+                </Button>
               ) : (
-                <Badge variant="outline">Not set up</Badge>
+                <Button size="sm" onClick={handleAddPayment}>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Add Payment Method
+                </Button>
               )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {usage?.hasPaymentMethod ? (
-              <Button variant="outline" size="sm" onClick={handleManageBilling}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Manage in Stripe
-              </Button>
-            ) : (
-              <Button size="sm" onClick={handleAddPayment}>
-                <CreditCard className="h-4 w-4 mr-2" />
-                Add Payment Method
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Pricing Info */}
         <div className="mt-8 rounded-lg border border-slate-200 bg-white p-6">
@@ -138,6 +160,17 @@ export default function BillingPage() {
             <p className="text-xs text-slate-400 pt-2 border-t border-slate-100">
               You&apos;re only charged for what you use. No subscriptions, no commitments.
             </p>
+            {process.env.NEXT_PUBLIC_SUPPORT_EMAIL && (
+              <p className="text-xs text-slate-400 mt-2">
+                Questions about billing?{' '}
+                <a
+                  href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
+                  className="underline hover:text-slate-600"
+                >
+                  Contact support
+                </a>
+              </p>
+            )}
           </div>
         </div>
       </main>

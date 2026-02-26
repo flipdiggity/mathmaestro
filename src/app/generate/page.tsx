@@ -73,7 +73,7 @@ interface GeneratedWorksheet {
 
 type Pacing = 'accelerating' | 'steady' | 'reinforcing';
 
-const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday'] as const;
+const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
 // ---------------------------------------------------------------------------
 // Inner component that uses useSearchParams (must be inside Suspense)

@@ -188,6 +188,16 @@ export function LandingPage() {
       <footer className="border-t border-slate-200 bg-white py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-slate-400">
           <p>&copy; {new Date().getFullYear()} SharpSheet. All rights reserved.</p>
+          {process.env.NEXT_PUBLIC_SUPPORT_EMAIL && (
+            <p className="mt-2">
+              <a
+                href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
+                className="underline hover:text-slate-600"
+              >
+                Contact support
+              </a>
+            </p>
+          )}
         </div>
       </footer>
     </div>

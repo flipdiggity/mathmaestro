@@ -9,6 +9,7 @@ interface UsageData {
   freeGeneratesRemaining: number;
   freeGradesRemaining: number;
   hasPaymentMethod: boolean;
+  isAdmin?: boolean;
 }
 
 export function UsageBanner() {
@@ -24,6 +25,9 @@ export function UsageBanner() {
   if (!usage) return null;
 
   const totalFreeRemaining = usage.freeGeneratesRemaining + usage.freeGradesRemaining;
+
+  // Don't show for admin users
+  if (usage.isAdmin) return null;
 
   // Don't show if they have a payment method or have used nothing
   if (usage.hasPaymentMethod || (usage.generates === 0 && usage.grades === 0)) return null;

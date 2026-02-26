@@ -1,0 +1,7 @@
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const raw = process.env.ADMIN_EMAILS ?? '';
+  if (!raw) return false;
+  const adminEmails = raw.split(',').map((e) => e.trim().toLowerCase());
+  return adminEmails.includes(email.toLowerCase());
+}

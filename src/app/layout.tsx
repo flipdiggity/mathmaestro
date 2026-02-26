@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ClerkProvider, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { MobileNav } from "@/components/nav/mobile-nav";
 import { UsageBanner } from "@/components/billing/usage-banner";
+import { getCurrentUser } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/admin";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -35,7 +37,7 @@ export const metadata: Metadata = {
   },
 };
 
-const navLinks = [
+const baseNavLinks = [
   { href: "/generate", label: "Generate" },
   { href: "/grade", label: "Grade" },
   { href: "/worksheets", label: "History" },
@@ -43,11 +45,21 @@ const navLinks = [
   { href: "/billing", label: "Billing" },
 ];
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let showAdmin = false;
+  try {
+    const user = await getCurrentUser();
+    showAdmin = !!user && isAdminEmail(user.email);
+  } catch {
+    // Not signed in — that's fine
+  }
+  const navLinks = showAdmin
+    ? [...baseNavLinks, { href: "/admin", label: "Admin" }]
+    : baseNavLinks;
   return (
     <ClerkProvider>
       <html lang="en">
