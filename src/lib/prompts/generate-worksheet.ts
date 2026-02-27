@@ -49,6 +49,8 @@ ${topicDescriptions}
 
 Distribute questions across the topics proportionally. For REVIEW topics, make problems slightly easier to rebuild confidence. For NEW topics, start accessible and increase difficulty.
 
+IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific values, word problem scenarios, and phrasings so that no two worksheets are alike, even for the same topics.
+
 For topics marked IMAGE TOPIC: describe what the student should plot or identify in the question text, and set hasGrid to true with the appropriate gridType. The system will render the grid automatically.
 
 Return ONLY valid JSON in this exact format (no markdown, no code fences):

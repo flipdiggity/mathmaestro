@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
       const responseText = await generateText(prompt, {
         system,
-        temperature: 0.3,
+        temperature: 0.7,
         maxTokens: 8192,
       });
 
