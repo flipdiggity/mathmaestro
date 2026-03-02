@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, Download, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Loader2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -110,6 +110,14 @@ function WorksheetHistoryContent() {
   const [isLoadingChildren, setIsLoadingChildren] = useState(true);
   const [isLoadingWorksheets, setIsLoadingWorksheets] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchDownloading, setIsBatchDownloading] = useState(false);
+
+  // Clear selection when child changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [selectedChildId]);
 
   useEffect(() => {
     async function fetchChildren() {
@@ -161,6 +169,32 @@ function WorksheetHistoryContent() {
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
+  const toggleSelected = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleWeekSelected = useCallback((group: WeekGroup) => {
+    setSelectedIds((prev) => {
+      const groupIds = group.worksheets.map((ws) => ws.id);
+      const allSelected = groupIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allSelected) {
+        groupIds.forEach((id) => next.delete(id));
+      } else {
+        groupIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }, []);
+
   const handleDownloadPdf = useCallback(async (ws: Worksheet) => {
     setDownloadingId(ws.id);
     try {
@@ -180,14 +214,49 @@ function WorksheetHistoryContent() {
     }
   }, []);
 
-  const handleDownloadAll = useCallback(
-    async (group: WeekGroup) => {
-      for (const ws of group.worksheets) {
-        await handleDownloadPdf(ws);
-      }
-    },
-    [handleDownloadPdf]
-  );
+  const handleBatchDownload = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setIsBatchDownloading(true);
+    try {
+      const res = await fetch('/api/worksheets/batch-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worksheetIds: Array.from(selectedIds) }),
+      });
+      if (!res.ok) throw new Error('Batch download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `worksheets_${selectedIds.size}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail
+    } finally {
+      setIsBatchDownloading(false);
+    }
+  }, [selectedIds]);
+
+  const handleDelete = useCallback(async (ws: Worksheet) => {
+    if (!confirm(`Delete "${ws.title}"? This cannot be undone.`)) return;
+    setDeletingId(ws.id);
+    try {
+      const res = await fetch(`/api/worksheets/${ws.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      setWorksheets((prev) => prev.filter((w) => w.id !== ws.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(ws.id);
+        return next;
+      });
+      if (expandedId === ws.id) setExpandedId(null);
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingId(null);
+    }
+  }, [expandedId]);
 
   const weekGroups = groupByWeek(worksheets);
 
@@ -251,151 +320,219 @@ function WorksheetHistoryContent() {
               </div>
             ) : (
               <div className="space-y-8">
-                {weekGroups.map((group) => (
-                  <div key={group.label}>
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
-                        {group.label}
-                      </h2>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownloadAll(group)}
-                        className="text-xs"
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Download All
-                      </Button>
-                    </div>
+                {weekGroups.map((group) => {
+                  const groupIds = group.worksheets.map((ws) => ws.id);
+                  const allSelected = groupIds.every((id) => selectedIds.has(id));
+                  const someSelected = groupIds.some((id) => selectedIds.has(id));
 
-                    <div className="space-y-2">
-                      {group.worksheets.map((ws) => {
-                        const isExpanded = expandedId === ws.id;
-                        const questions = getQuestions(ws);
-                        const isDownloading = downloadingId === ws.id;
+                  return (
+                    <div key={group.label}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            ref={(el) => {
+                              if (el) el.indeterminate = someSelected && !allSelected;
+                            }}
+                            onChange={() => toggleWeekSelected(group)}
+                            className="h-4 w-4 rounded border-slate-300 text-primary accent-current cursor-pointer"
+                          />
+                          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                            {group.label}
+                          </h2>
+                        </div>
+                      </div>
 
-                        return (
-                          <Card key={ws.id}>
-                            <button
-                              type="button"
-                              onClick={() => toggleExpanded(ws.id)}
-                              className="w-full text-left p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors rounded-xl"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
-                              )}
+                      <div className="space-y-2">
+                        {group.worksheets.map((ws) => {
+                          const isExpanded = expandedId === ws.id;
+                          const questions = getQuestions(ws);
+                          const isDownloading = downloadingId === ws.id;
+                          const isSelected = selectedIds.has(ws.id);
 
-                              <div className="flex-1 min-w-0">
-                                <div className="font-medium text-sm truncate">
-                                  {ws.title}
-                                </div>
-                                <div className="text-xs text-slate-400 mt-0.5">
-                                  {ws.dayOfWeek && `${ws.dayOfWeek} · `}
-                                  {formatDate(ws.createdAt)} ·{' '}
-                                  {questions.length} questions
-                                </div>
-                              </div>
+                          return (
+                            <Card key={ws.id} className={isSelected ? 'ring-2 ring-primary/30' : ''}>
+                              <div className="flex items-center">
+                                <label
+                                  className="flex items-center pl-4 pr-1 py-4 cursor-pointer"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleSelected(ws.id)}
+                                    className="h-4 w-4 rounded border-slate-300 text-primary accent-current cursor-pointer"
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded(ws.id)}
+                                  className="flex-1 text-left p-4 pl-2 flex items-center gap-3 hover:bg-muted/50 transition-colors rounded-r-xl"
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                                  )}
 
-                              <div className="flex items-center gap-2 shrink-0">
-                                {ws.gradingResult ? (
-                                  <Badge
-                                    variant={
-                                      ws.gradingResult.scorePercent >= 80
-                                        ? 'default'
-                                        : ws.gradingResult.scorePercent >= 60
-                                          ? 'secondary'
-                                          : 'destructive'
-                                    }
-                                  >
-                                    {ws.gradingResult.correctCount}/
-                                    {ws.gradingResult.totalQuestions} (
-                                    {Math.round(ws.gradingResult.scorePercent)}
-                                    %)
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline">{ws.status}</Badge>
-                                )}
-                              </div>
-                            </button>
-
-                            {isExpanded && (
-                              <CardContent className="pt-0 pb-4 px-4">
-                                <div className="border-t pt-3 space-y-4">
-                                  {/* Actions */}
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleDownloadPdf(ws)}
-                                      disabled={isDownloading}
-                                    >
-                                      {isDownloading ? (
-                                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                                      ) : (
-                                        <Download className="h-3 w-3 mr-1" />
-                                      )}
-                                      Download PDF
-                                    </Button>
-                                    {ws.status !== 'graded' && (
-                                      <Link
-                                        href={`/grade?child=${selectedChildId}&worksheet=${ws.id}`}
-                                      >
-                                        <Button variant="outline" size="sm">
-                                          Grade
-                                        </Button>
-                                      </Link>
-                                    )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium text-sm truncate">
+                                      {ws.title}
+                                    </div>
+                                    <div className="text-xs text-slate-400 mt-0.5">
+                                      {ws.dayOfWeek && `${ws.dayOfWeek} · `}
+                                      {formatDate(ws.createdAt)} ·{' '}
+                                      {questions.length} questions
+                                    </div>
                                   </div>
 
-                                  {/* Questions list */}
-                                  {questions.length > 0 && (
-                                    <div className="space-y-2">
-                                      <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                        Questions & Answers
-                                      </h3>
-                                      <div className="space-y-1.5">
-                                        {questions.map((q) => (
-                                          <div
-                                            key={q.number}
-                                            className="flex items-start gap-3 p-2 bg-slate-50 rounded-md text-sm"
-                                          >
-                                            <span className="text-xs font-mono text-slate-400 mt-0.5 w-6 shrink-0 text-right">
-                                              {q.number}.
-                                            </span>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="text-slate-700">
-                                                {q.question}
-                                              </div>
-                                              <div className="text-xs text-slate-400 mt-0.5">
-                                                Answer: {q.answer}
-                                                {q.topicName && (
-                                                  <span className="ml-2">
-                                                    · {q.topicName}
-                                                  </span>
-                                                )}
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {ws.gradingResult ? (
+                                      <Badge
+                                        variant={
+                                          ws.gradingResult.scorePercent >= 80
+                                            ? 'default'
+                                            : ws.gradingResult.scorePercent >= 60
+                                              ? 'secondary'
+                                              : 'destructive'
+                                        }
+                                      >
+                                        {ws.gradingResult.correctCount}/
+                                        {ws.gradingResult.totalQuestions} (
+                                        {Math.round(ws.gradingResult.scorePercent)}
+                                        %)
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline">{ws.status}</Badge>
+                                    )}
+                                  </div>
+                                </button>
+                              </div>
+
+                              {isExpanded && (
+                                <CardContent className="pt-0 pb-4 px-4">
+                                  <div className="border-t pt-3 space-y-4">
+                                    {/* Actions */}
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownloadPdf(ws)}
+                                        disabled={isDownloading}
+                                      >
+                                        {isDownloading ? (
+                                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                        ) : (
+                                          <Download className="h-3 w-3 mr-1" />
+                                        )}
+                                        Download PDF
+                                      </Button>
+                                      {ws.status !== 'graded' && (
+                                        <Link
+                                          href={`/grade?child=${selectedChildId}&worksheet=${ws.id}`}
+                                        >
+                                          <Button variant="outline" size="sm">
+                                            Grade
+                                          </Button>
+                                        </Link>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDelete(ws)}
+                                        disabled={deletingId === ws.id}
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
+                                      >
+                                        {deletingId === ws.id ? (
+                                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                        ) : (
+                                          <Trash2 className="h-3 w-3 mr-1" />
+                                        )}
+                                        Delete
+                                      </Button>
+                                    </div>
+
+                                    {/* Questions list */}
+                                    {questions.length > 0 && (
+                                      <div className="space-y-2">
+                                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                                          Questions & Answers
+                                        </h3>
+                                        <div className="space-y-1.5">
+                                          {questions.map((q) => (
+                                            <div
+                                              key={q.number}
+                                              className="flex items-start gap-3 p-2 bg-slate-50 rounded-md text-sm"
+                                            >
+                                              <span className="text-xs font-mono text-slate-400 mt-0.5 w-6 shrink-0 text-right">
+                                                {q.number}.
+                                              </span>
+                                              <div className="flex-1 min-w-0">
+                                                <div className="text-slate-700">
+                                                  {q.question}
+                                                </div>
+                                                <div className="text-xs text-slate-400 mt-0.5">
+                                                  Answer: {q.answer}
+                                                  {q.topicName && (
+                                                    <span className="ml-2">
+                                                      · {q.topicName}
+                                                    </span>
+                                                  )}
+                                                </div>
                                               </div>
                                             </div>
-                                          </div>
-                                        ))}
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </CardContent>
-                            )}
-                          </Card>
-                        );
-                      })}
+                                    )}
+                                  </div>
+                                </CardContent>
+                              )}
+                            </Card>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* Sticky batch download bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50">
+          <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {selectedIds.size} worksheet{selectedIds.size !== 1 ? 's' : ''} selected
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleBatchDownload}
+                disabled={isBatchDownloading}
+              >
+                {isBatchDownloading ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Download className="h-3 w-3 mr-1" />
+                )}
+                Download {selectedIds.size} as PDF
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
