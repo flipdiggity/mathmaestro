@@ -113,6 +113,7 @@ function WorksheetHistoryContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBatchDownloading, setIsBatchDownloading] = useState(false);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
   // Clear selection when child changes
   useEffect(() => {
@@ -237,6 +238,28 @@ function WorksheetHistoryContent() {
       setIsBatchDownloading(false);
     }
   }, [selectedIds]);
+
+  const handleBatchDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!confirm(`Delete ${count} worksheet${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+    setIsBatchDeleting(true);
+    try {
+      const res = await fetch('/api/worksheets/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worksheetIds: Array.from(selectedIds) }),
+      });
+      if (!res.ok) throw new Error('Batch delete failed');
+      setWorksheets((prev) => prev.filter((w) => !selectedIds.has(w.id)));
+      if (expandedId && selectedIds.has(expandedId)) setExpandedId(null);
+      setSelectedIds(new Set());
+    } catch {
+      // silently fail
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  }, [selectedIds, expandedId]);
 
   const handleDelete = useCallback(async (ws: Worksheet) => {
     if (!confirm(`Delete "${ws.title}"? This cannot be undone.`)) return;
@@ -518,16 +541,29 @@ function WorksheetHistoryContent() {
                 Clear
               </Button>
               <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBatchDelete}
+                disabled={isBatchDeleting || isBatchDownloading}
+              >
+                {isBatchDeleting ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <Trash2 className="h-3 w-3 mr-1" />
+                )}
+                Delete
+              </Button>
+              <Button
                 size="sm"
                 onClick={handleBatchDownload}
-                disabled={isBatchDownloading}
+                disabled={isBatchDownloading || isBatchDeleting}
               >
                 {isBatchDownloading ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />
                 ) : (
                   <Download className="h-3 w-3 mr-1" />
                 )}
-                Download {selectedIds.size} as PDF
+                Download as PDF
               </Button>
             </div>
           </div>
