@@ -22,6 +22,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 1,
+      nineWeeks: 1,
     },
     {
       id: "4.nbt.2",
@@ -39,6 +40,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 2,
+      nineWeeks: 1,
     },
     {
       id: "4.nbt.3",
@@ -57,6 +59,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 3,
+      nineWeeks: 1,
     },
     {
       id: "4.nbt.4",
@@ -74,6 +77,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 4,
+      nineWeeks: 1,
     },
     {
       id: "4.nbt.5",
@@ -92,6 +96,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 5,
+      nineWeeks: 1,
     },
     {
       id: "4.nbt.6",
@@ -110,6 +115,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 6,
+      nineWeeks: 1,
     },
     {
       id: "4.nbt.7",
@@ -128,6 +134,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 7,
+      nineWeeks: 1,
     },
     {
       id: "4.nbt.8",
@@ -146,6 +153,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 8,
+      nineWeeks: 1,
     },
 
     // ─── Strand 2: Fractions & Decimals ─────────────────────────────
@@ -166,6 +174,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 9,
+      nineWeeks: 2,
     },
     {
       id: "4.nf.2",
@@ -183,6 +192,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 10,
+      nineWeeks: 2,
     },
     {
       id: "4.nf.3",
@@ -201,6 +211,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 11,
+      nineWeeks: 2,
     },
     {
       id: "4.nf.4",
@@ -219,6 +230,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 12,
+      nineWeeks: 2,
     },
     {
       id: "4.nf.5",
@@ -236,6 +248,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 13,
+      nineWeeks: 2,
     },
 
     // ─── Strand 3: Algebraic Reasoning ──────────────────────────────
@@ -255,6 +268,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 14,
+      nineWeeks: 3,
     },
     {
       id: "4.oa.2",
@@ -273,6 +287,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 15,
+      nineWeeks: 3,
     },
     {
       id: "4.oa.3",
@@ -291,6 +306,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 16,
+      nineWeeks: 3,
     },
 
     // ─── Strand 4: Geometry ─────────────────────────────────────────
@@ -311,6 +327,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 17,
+      nineWeeks: 3,
     },
     {
       id: "4.g.2",
@@ -328,6 +345,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 18,
+      nineWeeks: 3,
     },
     {
       id: "4.g.3",
@@ -346,6 +364,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 19,
+      nineWeeks: 3,
     },
 
     // ─── Strand 5: Measurement ──────────────────────────────────────
@@ -366,6 +385,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 20,
+      nineWeeks: 4,
     },
     {
       id: "4.md.2",
@@ -384,6 +404,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 21,
+      nineWeeks: 4,
     },
     {
       id: "4.md.3",
@@ -402,6 +423,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 22,
+      nineWeeks: 4,
     },
 
     // ─── Strand 6: Data Analysis ────────────────────────────────────
@@ -421,6 +443,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 23,
+      nineWeeks: 4,
     },
     {
       id: "4.da.2",
@@ -439,6 +462,7 @@ export const grade4Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 24,
+      nineWeeks: 4,
     },
   ],
 };

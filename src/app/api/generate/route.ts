@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const topicReasonMap = new Map<string, 'new' | 'review'>();
     for (const s of selections) {
-      topicReasonMap.set(s.topic.id, s.reason);
+      topicReasonMap.set(s.topic.id, s.reason === 'review' ? 'review' : 'new');
     }
 
     const { system, prompt } = buildGeneratePrompt(

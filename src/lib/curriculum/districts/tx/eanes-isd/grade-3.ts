@@ -24,6 +24,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 1,
+      nineWeeks: 1,
     },
     {
       id: '3.nbt.2',
@@ -41,6 +42,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 2,
+      nineWeeks: 1,
     },
     {
       id: '3.nbt.3',
@@ -59,6 +61,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 3,
+      nineWeeks: 1,
     },
     {
       id: '3.nbt.4',
@@ -76,6 +79,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 4,
+      nineWeeks: 1,
     },
     {
       id: '3.nbt.5',
@@ -94,6 +98,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 5,
+      nineWeeks: 1,
     },
     {
       id: '3.nbt.6',
@@ -112,6 +117,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 6,
+      nineWeeks: 1,
     },
     {
       id: '3.nbt.7',
@@ -130,6 +136,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 7,
+      nineWeeks: 1,
     },
 
     // ─────────────────────────────────────────────
@@ -151,6 +158,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 8,
+      nineWeeks: 3,
     },
     {
       id: '3.frac.2',
@@ -168,6 +176,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 9,
+      nineWeeks: 3,
     },
     {
       id: '3.frac.3',
@@ -186,6 +195,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 10,
+      nineWeeks: 3,
     },
 
     // ─────────────────────────────────────────────
@@ -207,6 +217,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 11,
+      nineWeeks: 3,
     },
     {
       id: '3.alg.2',
@@ -224,6 +235,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 12,
+      nineWeeks: 3,
     },
     {
       id: '3.alg.3',
@@ -242,6 +254,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 13,
+      nineWeeks: 3,
     },
 
     // ─────────────────────────────────────────────
@@ -263,6 +276,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 14,
+      nineWeeks: 2,
     },
     {
       id: '3.geo.2',
@@ -281,6 +295,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 15,
+      nineWeeks: 2,
     },
     {
       id: '3.geo.3',
@@ -298,6 +313,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 16,
+      nineWeeks: 2,
     },
 
     // ─────────────────────────────────────────────
@@ -319,6 +335,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 17,
+      nineWeeks: 2,
     },
     {
       id: '3.meas.2',
@@ -337,6 +354,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 18,
+      nineWeeks: 2,
     },
     {
       id: '3.meas.3',
@@ -354,6 +372,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 19,
+      nineWeeks: 2,
     },
 
     // ─────────────────────────────────────────────
@@ -375,6 +394,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 20,
+      nineWeeks: 3,
     },
     {
       id: '3.data.2',
@@ -392,6 +412,7 @@ const grade3: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 21,
+      nineWeeks: 4,
     },
   ],
 };

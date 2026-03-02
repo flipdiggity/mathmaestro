@@ -22,6 +22,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 1,
+      nineWeeks: 1,
     },
     {
       id: "7.ns.2",
@@ -39,6 +40,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 2,
+      nineWeeks: 1,
     },
     {
       id: "7.ns.3",
@@ -57,6 +59,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 3,
+      nineWeeks: 1,
     },
     {
       id: "7.ns.4",
@@ -75,6 +78,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 4,
+      nineWeeks: 1,
     },
     {
       id: "7.ns.5",
@@ -93,6 +97,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 5,
+      nineWeeks: 1,
     },
 
     // ─── Strand 2: Expressions & Equations (TEKS 7.3) ────────────────────
@@ -113,6 +118,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 6,
+      nineWeeks: 2,
     },
     {
       id: "7.ee.2",
@@ -131,6 +137,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 7,
+      nineWeeks: 2,
     },
     {
       id: "7.ee.3",
@@ -149,6 +156,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 8,
+      nineWeeks: 2,
     },
     {
       id: "7.ee.4",
@@ -166,6 +174,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 9,
+      nineWeeks: 2,
     },
 
     // ─── Strand 3: Inequalities (TEKS 7.4) ───────────────────────────────
@@ -186,6 +195,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 10,
+      nineWeeks: 2,
     },
     {
       id: "7.iq.2",
@@ -204,6 +214,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 11,
+      nineWeeks: 2,
     },
 
     // ─── Strand 4: Proportional Relationships (TEKS 7.4-7.5) ─────────────
@@ -224,6 +235,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 12,
+      nineWeeks: 3,
     },
     {
       id: "7.pr.2",
@@ -241,6 +253,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 13,
+      nineWeeks: 3,
     },
     {
       id: "7.pr.3",
@@ -259,6 +272,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 14,
+      nineWeeks: 3,
     },
     {
       id: "7.pr.4",
@@ -277,6 +291,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 15,
+      nineWeeks: 3,
     },
     {
       id: "7.pr.5",
@@ -294,6 +309,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 16,
+      nineWeeks: 3,
     },
 
     // ─── Strand 5: Linear Relationships (TEKS 7.7) ───────────────────────
@@ -314,6 +330,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 17,
+      nineWeeks: 4,
       requiresImage: true,
       imageType: 'coordinate-plane',
     },
@@ -334,6 +351,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 18,
+      nineWeeks: 4,
       requiresImage: true,
       imageType: 'coordinate-plane',
     },
@@ -354,6 +372,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 19,
+      nineWeeks: 4,
       requiresImage: true,
       imageType: 'coordinate-plane',
     },
@@ -376,6 +395,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 20,
+      nineWeeks: 4,
     },
     {
       id: "7.pg.2",
@@ -394,6 +414,7 @@ export const grade7Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 21,
+      nineWeeks: 4,
     },
   ],
 };

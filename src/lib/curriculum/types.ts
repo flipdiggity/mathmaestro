@@ -10,6 +10,7 @@ export interface CurriculumTopic {
   sampleProblems: string[]; // Guide Claude's generation
   isVerifiable: boolean;    // Can answer be programmatically checked
   order: number;            // Sequence within grade
+  nineWeeks: 1 | 2 | 3 | 4; // Which 9-weeks grading period this topic belongs to
   requiresImage?: boolean;
   imageType?: 'coordinate-plane' | 'number-line';
 }
@@ -22,6 +23,6 @@ export interface GradeCurriculum {
 
 export interface TopicSelection {
   topic: CurriculumTopic;
-  reason: 'new' | 'review';
+  reason: 'new' | 'review' | 'current' | 'preview';
   priority: number;
 }

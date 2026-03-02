@@ -22,6 +22,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 1,
+      nineWeeks: 1,
     },
     {
       id: '6.ns.2',
@@ -40,6 +41,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 2,
+      nineWeeks: 1,
     },
     {
       id: '6.ns.3',
@@ -58,6 +60,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 3,
+      nineWeeks: 1,
     },
     {
       id: '6.ns.4',
@@ -76,6 +79,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 4,
+      nineWeeks: 1,
     },
     {
       id: '6.ns.5',
@@ -94,6 +98,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 5,
+      nineWeeks: 1,
     },
 
     // ─── Ratios & Rates ─────────────────────────────────────────────────
@@ -114,6 +119,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 6,
+      nineWeeks: 1,
     },
     {
       id: '6.rr.2',
@@ -132,6 +138,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 7,
+      nineWeeks: 2,
     },
     {
       id: '6.rr.3',
@@ -150,6 +157,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 8,
+      nineWeeks: 2,
     },
     {
       id: '6.rr.4',
@@ -168,6 +176,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 9,
+      nineWeeks: 2,
     },
 
     // ─── Expressions & Equations ────────────────────────────────────────
@@ -188,6 +197,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 10,
+      nineWeeks: 2,
     },
     {
       id: '6.ee.2',
@@ -206,6 +216,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 11,
+      nineWeeks: 2,
     },
     {
       id: '6.ee.3',
@@ -224,6 +235,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 12,
+      nineWeeks: 2,
     },
     {
       id: '6.ee.4',
@@ -242,6 +254,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 13,
+      nineWeeks: 2,
     },
     {
       id: '6.ee.5',
@@ -260,6 +273,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 14,
+      nineWeeks: 3,
     },
 
     // ─── Coordinate Planes ──────────────────────────────────────────────
@@ -280,6 +294,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 15,
+      nineWeeks: 3,
       requiresImage: true,
       imageType: 'coordinate-plane',
     },
@@ -300,6 +315,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 16,
+      nineWeeks: 3,
       requiresImage: true,
       imageType: 'coordinate-plane',
     },
@@ -322,6 +338,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 17,
+      nineWeeks: 3,
     },
     {
       id: '6.pr.2',
@@ -340,6 +357,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 18,
+      nineWeeks: 3,
     },
     {
       id: '6.pr.3',
@@ -358,6 +376,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 19,
+      nineWeeks: 3,
     },
 
     // ─── Geometry ───────────────────────────────────────────────────────
@@ -378,6 +397,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 20,
+      nineWeeks: 4,
     },
     {
       id: '6.gm.2',
@@ -396,6 +416,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 21,
+      nineWeeks: 4,
     },
     {
       id: '6.gm.3',
@@ -414,6 +435,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 22,
+      nineWeeks: 4,
     },
 
     // ─── Measurement ────────────────────────────────────────────────────
@@ -434,6 +456,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 23,
+      nineWeeks: 4,
     },
 
     // ─── Data Analysis ──────────────────────────────────────────────────
@@ -454,6 +477,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: true,
       order: 24,
+      nineWeeks: 4,
     },
     {
       id: '6.da.2',
@@ -472,6 +496,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 25,
+      nineWeeks: 4,
     },
     {
       id: '6.da.3',
@@ -490,6 +515,7 @@ export const grade56Curriculum: GradeCurriculum = {
       ],
       isVerifiable: false,
       order: 26,
+      nineWeeks: 4,
     },
   ],
 };
