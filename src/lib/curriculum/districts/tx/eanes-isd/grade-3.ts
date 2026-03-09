@@ -265,14 +265,15 @@ const grade3: GradeCurriculum = {
       tpiCode: '3.6A',
       name: 'Classifying 2D Shapes',
       description:
-        'Classify and sort two- and three-dimensional figures, including cones, cylinders, spheres, triangular and rectangular prisms, and cubes, based on attributes using formal geometric language.',
+        'Classify and sort two- and three-dimensional figures, including cones, cylinders, spheres, triangular and rectangular prisms, and cubes, based on attributes using formal geometric language. Focus on naming shapes, counting sides/faces/vertices, and comparing attributes. Do NOT include angle measurement or degree-based problems — those are above grade level.',
       gradeLevel: 3,
       strand: 'Geometry',
       difficulty: 1,
       prerequisites: [],
       sampleProblems: [
         'How is a square different from a rectangle? How are they the same?',
-        'Name a shape that has exactly 3 sides and 3 angles.',
+        'Name a shape that has exactly 3 sides. What is it called?',
+        'Is a cube a flat shape or a solid shape? How many faces does it have?',
       ],
       isVerifiable: false,
       order: 14,

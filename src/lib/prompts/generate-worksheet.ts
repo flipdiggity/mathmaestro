@@ -9,7 +9,8 @@ export function buildGeneratePrompt(
   childName: string,
   gradeLevel: number,
   selections: TopicSelection[],
-  totalQuestions: number
+  totalQuestions: number,
+  previousQuestions?: string[]
 ): { system: string; prompt: string } {
   const currentNW = getCurrentNineWeeks();
   const { start, end } = getNineWeeksDateRange(currentNW);
@@ -54,8 +55,10 @@ Generate more questions for [CURRENT] topics than [REVIEW] or [PREVIEW] topics.
 [REVIEW] topics are from earlier grading periods — keep those problems shorter and simpler.
 [PREVIEW] topics are upcoming material — keep those problems introductory.
 
-Rules:
+CRITICAL RULES:
 - Generate exactly ${totalQuestions} problems
+- STRICT GRADE LEVEL: Only generate problems appropriate for grade ${gradeLevel}. Do NOT include concepts from higher grades. Stick exactly to what is described in each topic description — do not extrapolate to related but more advanced concepts.
+- VERIFY EVERY ANSWER: Double-check your arithmetic for every problem. Compute the answer step by step before writing it. Wrong answers are unacceptable.
 - Problems should be clearly worded and unambiguous
 - Include a mix of computation and word problems
 - Each problem must have exactly ONE correct answer
@@ -63,7 +66,8 @@ Rules:
 - For word problems, use age-appropriate contexts
 - Number problems sequentially (1, 2, 3, ...)
 - Provide the correct answer for each problem
-- DO NOT include multiple choice - all problems should be free response${sectionInstruction}`;
+- DO NOT include multiple choice - all problems should be free response
+- Each question must be UNIQUE — do not repeat the same problem with different numbers${sectionInstruction}`;
 
   const imageSchemaFields = `
       "hasGrid": false,
@@ -75,7 +79,10 @@ ${topicDescriptions}
 
 Distribute questions across the topics, giving more weight to [CURRENT] topics (the primary focus for this grading period). For [REVIEW] topics, make problems slightly easier to rebuild confidence. For [CURRENT] topics, start accessible and increase difficulty. For [PREVIEW] topics, keep problems introductory and approachable.
 
-IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific values, word problem scenarios, and phrasings so that no two worksheets are alike, even for the same topics.
+IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific values, word problem scenarios, and phrasings so that no two worksheets are alike, even for the same topics. Do NOT start with the same type of question each time — vary the order of topic types across worksheets.${previousQuestions && previousQuestions.length > 0 ? `
+
+DO NOT REPEAT these questions from previous days (use completely different numbers, contexts, and phrasings):
+${previousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : ''}
 
 For topics marked IMAGE TOPIC: describe what the student should plot or identify in the question text, and set hasGrid to true with the appropriate gridType. The system will render the grid automatically.
 

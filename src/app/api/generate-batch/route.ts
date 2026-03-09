@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
     const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
 
     const excludeNewTopicIds = new Set<string>();
+    const previousQuestions: string[] = [];
     const worksheets: Array<{
       id: string;
       title: string;
@@ -109,7 +110,8 @@ export async function POST(request: NextRequest) {
         child.name,
         child.grade,
         selections,
-        questionCount
+        questionCount,
+        previousQuestions.length > 0 ? previousQuestions : undefined
       );
 
       const responseText = await generateText(prompt, {
@@ -133,11 +135,11 @@ export async function POST(request: NextRequest) {
       }
 
       const verifiedQuestions = verifyWorksheetAnswers(parsed.questions);
-      const questions: Question[] = verifiedQuestions.map((q) => {
+      const questions: Question[] = verifiedQuestions.map((q, idx) => {
         const section = q.section || topicReasonMap.get(q.topicId) || 'new';
         const imgMeta = imageTopicMap.get(q.topicId);
         return {
-          number: q.number,
+          number: idx + 1,
           question: q.question,
           answer: q.answer,
           topicId: q.topicId,
@@ -163,6 +165,14 @@ export async function POST(request: NextRequest) {
       });
 
       await recordUsage(user.id, 'generate', worksheet.id);
+
+      // Track questions for dedup across days (keep last 30 to avoid prompt bloat)
+      for (const q of questions) {
+        previousQuestions.push(q.question);
+      }
+      if (previousQuestions.length > 60) {
+        previousQuestions.splice(0, previousQuestions.length - 60);
+      }
 
       worksheets.push({
         id: worksheet.id,

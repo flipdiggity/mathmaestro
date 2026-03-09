@@ -46,22 +46,41 @@ export async function POST(request: NextRequest) {
 
     const questions: Question[] = JSON.parse(worksheet.questionsJson);
 
-    const images = await Promise.all(
-      photoFiles.map(async (photo) => {
-        const bytes = await photo.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const base64 = buffer.toString('base64');
+    let images;
+    try {
+      images = await Promise.all(
+        photoFiles.map(async (photo) => {
+          const bytes = await photo.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+          const base64 = buffer.toString('base64');
 
-        let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg';
-        if (photo.type === 'image/png') mediaType = 'image/png';
-        else if (photo.type === 'image/webp') mediaType = 'image/webp';
+          let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg';
+          if (photo.type === 'image/png') mediaType = 'image/png';
+          else if (photo.type === 'image/webp') mediaType = 'image/webp';
 
-        return { base64, mediaType };
-      })
-    );
+          return { base64, mediaType };
+        })
+      );
+    } catch (imgError) {
+      console.error('Image processing error:', imgError);
+      return NextResponse.json(
+        { error: 'Failed to process uploaded images. Try smaller or fewer photos.' },
+        { status: 400 }
+      );
+    }
 
     const { system, prompt } = buildGradePrompt(questions);
-    const responseText = await gradeWithMultipleImages(images, prompt, { system });
+
+    let responseText;
+    try {
+      responseText = await gradeWithMultipleImages(images, prompt, { system });
+    } catch (aiError) {
+      console.error('AI grading API error:', aiError);
+      return NextResponse.json(
+        { error: 'AI grading service error. The image may be too large or unclear. Please try again with a clearer photo.' },
+        { status: 502 }
+      );
+    }
 
     let cleaned = responseText.trim();
     if (cleaned.startsWith('```')) {

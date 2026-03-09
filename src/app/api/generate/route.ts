@@ -96,11 +96,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const questions: Question[] = verifiedQuestions.map((q) => {
+    const questions: Question[] = verifiedQuestions.map((q, idx) => {
       const section = q.section || topicReasonMap.get(q.topicId) || 'new';
       const imgMeta = imageTopicMap.get(q.topicId);
       return {
-        number: q.number,
+        number: idx + 1,
         question: q.question,
         answer: q.answer,
         topicId: q.topicId,
