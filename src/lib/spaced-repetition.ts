@@ -81,7 +81,38 @@ export async function selectTopics(
   }
 
   const now = new Date();
-  const currentNW = getCurrentNineWeeks(now);
+
+  // ── Test-prep compressed pacing ─────────────────────────────────
+  // If we have a targetTestDate, use compressed pacing that maps
+  // calendar weeks to curriculum nine-weeks. This covers 18+ weeks
+  // of material in the time remaining before the test.
+  //
+  // Week schedule (divide remaining time into 4 equal segments):
+  //   Segment 1 → nineWeeks 1 topics as "current"
+  //   Segment 2 → nineWeeks 2 topics as "current"
+  //   Segment 3 → nineWeeks 3 topics as "current"
+  //   Segment 4 → review all (nineWeeks 1-2 primary focus)
+  //
+  // Previous segments become "review", future segments become "preview".
+  let currentNW: 1 | 2 | 3 | 4;
+
+  if (targetTestDate) {
+    const daysUntilTest = Math.max(1, (targetTestDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const totalPrepDays = 30; // approximate total prep period
+    const daysSinceStart = Math.max(0, totalPrepDays - daysUntilTest);
+    const segmentLength = totalPrepDays / 4;
+    const segment = Math.min(3, Math.floor(daysSinceStart / segmentLength));
+
+    // Map segments: 0→NW1, 1→NW2, 2→NW3, 3→NW4 (review)
+    // But for review week (segment 3), set to NW1 so 1st/2nd NW are "current" + "previous"
+    if (segment >= 3) {
+      currentNW = 1; // Review week: focus on NW1-2 material
+    } else {
+      currentNW = (segment + 1) as 1 | 2 | 3 | 4;
+    }
+  } else {
+    currentNW = getCurrentNineWeeks(now);
+  }
 
   // Get pacing recommendation
   const pacing = await getPacingRecommendation(childId);

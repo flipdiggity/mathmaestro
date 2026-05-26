@@ -42,3 +42,14 @@ prisma/dev.db-journal
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Reference content (kept locally, not in repo)
+edmentum-content/
+broll-clips/
+
+# Tooling / session artifacts
+.claude/
+scripts/generate-broll.sh
+scripts/dump-edmentum-page.js
+scripts/extract-edmentum.js
+scripts/extract-missing-lessons.js

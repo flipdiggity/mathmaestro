@@ -4,6 +4,7 @@ import { grade3Curriculum } from './districts/tx/eanes-isd/grade-3';
 import { grade4Curriculum } from './districts/tx/eanes-isd/grade-4';
 import { grade56Curriculum } from './districts/tx/eanes-isd/grade-6';
 import { grade7Curriculum } from './districts/tx/eanes-isd/grade-7';
+import { grade8AccelPrepCurriculum } from './districts/tx/eanes-isd/grade-8-accel-prep';
 
 export { type CurriculumTopic, type GradeCurriculum } from './types';
 export { type DistrictConfig } from './districts/tx/eanes-isd';
@@ -19,6 +20,7 @@ const curriculumRegistry: Record<string, GradeCurriculum> = {
   'TX/eanes-isd/4': grade4Curriculum,
   'TX/eanes-isd/6': grade56Curriculum,
   'TX/eanes-isd/7': grade7Curriculum,
+  'TX/eanes-isd/8': grade8AccelPrepCurriculum,
 };
 
 export function getDistrictConfig(
@@ -64,6 +66,14 @@ export function getTopicsForChild(
   if (!districtConfig) return [];
 
   const key = (g: number) => `${state}/${district}/${g}`;
+
+  // Test-prep track: return ONLY the test-prep curriculum, not the regular grade topics
+  if (track === 'test-prep' && districtConfig.testPrepMapping?.[grade]) {
+    const prepGrade = districtConfig.testPrepMapping[grade];
+    const prepCurriculum = curriculumRegistry[key(prepGrade)];
+    return prepCurriculum ? [...prepCurriculum.topics] : [];
+  }
+
   const baseCurriculum = curriculumRegistry[key(grade)];
   const topics = baseCurriculum ? [...baseCurriculum.topics] : [];
 

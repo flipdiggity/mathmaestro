@@ -21,7 +21,12 @@ const AVAILABLE_DISTRICTS: Record<string, { id: string; name: string }[]> = {
   TX: [{ id: 'eanes-isd', name: 'Eanes ISD' }],
 };
 const GRADES = [3, 4, 5, 6, 7];
-const TRACKS = ['standard', 'accelerated'];
+const TRACKS = ['standard', 'accelerated', 'test-prep'];
+const TRACK_LABELS: Record<string, string> = {
+  'standard': 'Standard',
+  'accelerated': 'Accelerated',
+  'test-prep': 'Test Prep (Placement Exam)',
+};
 
 export default function ManageChildrenPage() {
   const [children, setChildren] = useState<Child[]>([]);
@@ -209,7 +214,7 @@ export default function ManageChildrenPage() {
                     >
                       {TRACKS.map((t) => (
                         <option key={t} value={t}>
-                          {t.charAt(0).toUpperCase() + t.slice(1)}
+                          {TRACK_LABELS[t] || t}
                         </option>
                       ))}
                     </select>
