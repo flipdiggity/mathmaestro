@@ -1,9 +1,6 @@
-import { SignUp } from '@clerk/nextjs';
+import { redirect } from 'next/navigation';
 
+// Personal-use rebuild: no auth, no sign-up. Redirect to home.
 export default function SignUpPage() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <SignUp />
-    </div>
-  );
+  redirect('/');
 }

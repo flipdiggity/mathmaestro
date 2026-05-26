@@ -1,17 +1,15 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+/**
+ * Personal-use middleware shim.
+ *
+ * The SaaS version protected most routes via Clerk middleware. For personal
+ * use there's nothing to gate, so we let everything through. The matcher is
+ * still here so Next.js doesn't run middleware on static assets.
+ */
+import { NextResponse } from 'next/server';
 
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/api/webhooks(.*)',
-]);
-
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    await auth.protect();
-  }
-});
+export default function middleware() {
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
