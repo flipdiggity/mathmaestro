@@ -3,51 +3,65 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create a dev user
-  const devUser = await prisma.user.upsert({
-    where: { clerkId: 'dev_user' },
+  // Local user for the personal-use rebuild — matches LOCAL_USER in src/lib/auth.ts.
+  const user = await prisma.user.upsert({
+    where: { id: 'local-felipe' },
     update: {},
     create: {
-      id: 'dev-user',
-      clerkId: 'dev_user',
-      email: 'dev@sharpsheet.com',
-      name: 'Dev User',
+      id: 'local-felipe',
+      clerkId: 'local-felipe',
+      email: 'felipe@local',
+      name: 'Felipe',
     },
   });
 
-  // Eliana - 5th grade, targeting Math 8 Accelerated placement test May 2026
+  // Eliana — entering 6th grade. Qualified for Math 7/8 Compacted equivalent
+  // (Eanes accelerated track that covers all of Math 7 + all of Math 8 in
+  // one year). Setting grade: 7 + track: 'accelerated' pulls grade-7 +
+  // grade-8 topics via acceleratedMapping. Note: grade-8 currently uses
+  // grade-8-accel-prep.ts which is actually all Math 7 content — Day 2
+  // task is to write a real grade-8.ts.
   const eliana = await prisma.child.upsert({
     where: { id: 'eliana' },
-    update: { userId: devUser.id },
+    update: {
+      grade: 7,
+      track: 'accelerated',
+      targetTestDate: null,
+      userId: user.id,
+    },
     create: {
       id: 'eliana',
       name: 'Eliana',
-      grade: 5,
+      grade: 7,
       track: 'accelerated',
       state: 'TX',
       district: 'eanes-isd',
-      targetTestDate: new Date('2026-05-15'),
-      userId: devUser.id,
+      userId: user.id,
     },
   });
 
-  // Mylo - 3rd grade, preparing for accelerated 4th grade
+  // Mylo — entering 4th grade. Standard track for now; flip to 'accelerated'
+  // once grade-5.ts is written in Day 2 (acceleratedMapping[4] = [5]).
   const mylo = await prisma.child.upsert({
     where: { id: 'mylo' },
-    update: { userId: devUser.id },
+    update: {
+      grade: 4,
+      track: 'standard',
+      targetTestDate: null,
+      userId: user.id,
+    },
     create: {
       id: 'mylo',
       name: 'Mylo',
-      grade: 3,
-      track: 'accelerated',
+      grade: 4,
+      track: 'standard',
       state: 'TX',
       district: 'eanes-isd',
-      targetTestDate: new Date('2026-05-15'),
-      userId: devUser.id,
+      userId: user.id,
     },
   });
 
-  console.log('Seeded:', { devUser, eliana, mylo });
+  console.log('Seeded:', { user, eliana, mylo });
 }
 
 main()
