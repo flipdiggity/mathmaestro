@@ -300,6 +300,50 @@ export async function selectTopics(
  * Update mastery after grading.
  * Formula: newMastery = 0.7 * oldMastery + 0.3 * newScore
  */
+/**
+ * Re-apply mastery for a topic after a manual grade correction. The grader
+ * already applied `previousScore` for this practice via updateMastery (one EMA
+ * step + timesPracticed++). This reverses that single step and re-applies the
+ * corrected score in its place, WITHOUT inflating timesPracticed — so a teacher
+ * override replaces the grade rather than stacking a second practice event.
+ *
+ * Assumes no other practice on this topic happened between grading and the
+ * override (true for an immediate correction on the results screen).
+ */
+export async function correctMastery(
+  childId: string,
+  topicId: string,
+  previousScore: number,
+  correctedScore: number
+): Promise<void> {
+  if (Math.abs(previousScore - correctedScore) < 1e-9) return;
+
+  const rec = await prisma.topicMastery.findUnique({
+    where: { childId_topicId: { childId, topicId } },
+  });
+  if (!rec) return;
+
+  let newMastery: number;
+  if (rec.timesPracticed <= 1) {
+    // The grade was this topic's first practice — mastery was set directly to
+    // previousScore. Replace it with the corrected score.
+    newMastery = correctedScore;
+  } else {
+    // Reverse one EMA step (mastery = 0.7*prior + 0.3*previousScore) to recover
+    // the prior mastery, then re-apply with the corrected score.
+    const prior = (rec.mastery - 0.3 * previousScore) / 0.7;
+    newMastery = 0.7 * prior + 0.3 * correctedScore;
+  }
+
+  await prisma.topicMastery.update({
+    where: { childId_topicId: { childId, topicId } },
+    data: {
+      mastery: Math.round(Math.max(0, Math.min(100, newMastery)) * 100) / 100,
+      lastScore: correctedScore,
+    },
+  });
+}
+
 export async function updateMastery(
   childId: string,
   topicId: string,

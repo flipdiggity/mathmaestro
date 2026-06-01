@@ -79,6 +79,7 @@ interface Worksheet {
 }
 
 interface GradingResultData {
+  id: string;
   results: GradingQuestionResult[];
   totalQuestions: number;
   correctCount: number;
@@ -247,6 +248,7 @@ function GradePageContent() {
             </Button>
           </div>
           <GradingResults
+            gradingResultId={gradingResult.id}
             results={gradingResult.results}
             totalQuestions={gradingResult.totalQuestions}
             correctCount={gradingResult.correctCount}
