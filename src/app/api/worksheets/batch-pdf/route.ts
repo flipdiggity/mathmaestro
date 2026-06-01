@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
-import { renderBatchWorksheetPDF } from '@/lib/pdf/render';
+import { renderBatchWorksheetPDF, TopicReviewRef } from '@/lib/pdf/render';
+import { getTopicById } from '@/lib/curriculum';
 import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -27,10 +28,23 @@ export async function POST(request: NextRequest) {
 
     const childName = worksheets[0].child.name;
 
-    const days = worksheets.map((ws) => ({
-      title: ws.title,
-      questions: JSON.parse(ws.questionsJson) as Question[],
-    }));
+    const days = worksheets.map((ws) => {
+      let topicReviews: TopicReviewRef[] = [];
+      try {
+        const topicIds: string[] = JSON.parse(ws.topicIdsJson);
+        topicReviews = topicIds
+          .map((id) => getTopicById(id))
+          .filter((t): t is NonNullable<typeof t> => Boolean(t))
+          .map((t) => ({ topicName: t.name, bookRefs: t.bookRefs }));
+      } catch {
+        // No/invalid topicIdsJson — render without the review block.
+      }
+      return {
+        title: ws.title,
+        questions: JSON.parse(ws.questionsJson) as Question[],
+        topicReviews,
+      };
+    });
 
     const pdfBuffer = await renderBatchWorksheetPDF(childName, days);
 

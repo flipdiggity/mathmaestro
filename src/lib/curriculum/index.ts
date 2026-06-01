@@ -2,9 +2,10 @@ import { CurriculumTopic, GradeCurriculum } from './types';
 import { DistrictConfig, eanesIsd } from './districts/tx/eanes-isd';
 import { grade3Curriculum } from './districts/tx/eanes-isd/grade-3';
 import { grade4Curriculum } from './districts/tx/eanes-isd/grade-4';
+import { grade5Curriculum } from './districts/tx/eanes-isd/grade-5';
 import { grade56Curriculum } from './districts/tx/eanes-isd/grade-6';
 import { grade7Curriculum } from './districts/tx/eanes-isd/grade-7';
-import { grade8AccelPrepCurriculum } from './districts/tx/eanes-isd/grade-8-accel-prep';
+import { grade8Curriculum } from './districts/tx/eanes-isd/grade-8';
 
 export { type CurriculumTopic, type GradeCurriculum } from './types';
 export { type DistrictConfig } from './districts/tx/eanes-isd';
@@ -15,12 +16,17 @@ const districtRegistry: Record<string, DistrictConfig> = {
 };
 
 // Grade curricula: keyed by `${state}/${districtSlug}/${grade}`
+// Note: the old grade-8-accel-prep.ts file still exists on disk but is no
+// longer wired in. It contained Math 7 content mislabeled as grade-8 and was
+// superseded by grade-8.ts (real Math 8) and grade-7.ts (which now contains
+// the migrated second-half-7 topics).
 const curriculumRegistry: Record<string, GradeCurriculum> = {
   'TX/eanes-isd/3': grade3Curriculum,
   'TX/eanes-isd/4': grade4Curriculum,
+  'TX/eanes-isd/5': grade5Curriculum,
   'TX/eanes-isd/6': grade56Curriculum,
   'TX/eanes-isd/7': grade7Curriculum,
-  'TX/eanes-isd/8': grade8AccelPrepCurriculum,
+  'TX/eanes-isd/8': grade8Curriculum,
 };
 
 export function getDistrictConfig(

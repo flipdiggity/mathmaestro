@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { verifyWorksheetOwnership } from '@/lib/ownership';
-import { renderWorksheetPDF } from '@/lib/pdf/render';
+import { renderWorksheetPDF, TopicReviewRef } from '@/lib/pdf/render';
+import { getTopicById } from '@/lib/curriculum';
 import { Question } from '@/types';
 
 export async function GET(
@@ -18,10 +19,24 @@ export async function GET(
 
     const questions: Question[] = JSON.parse(worksheet.questionsJson);
 
+    // Build the "Before you start" review block from the worksheet's topics.
+    let topicReviews: TopicReviewRef[] = [];
+    try {
+      const topicIds: string[] = JSON.parse(worksheet.topicIdsJson);
+      topicReviews = topicIds
+        .map((id) => getTopicById(id))
+        .filter((t): t is NonNullable<typeof t> => Boolean(t))
+        .map((t) => ({ topicName: t.name, bookRefs: t.bookRefs }));
+    } catch {
+      // No/invalid topicIdsJson — render without the review block.
+    }
+
     const pdfBuffer = await renderWorksheetPDF(
       worksheet.title,
       worksheet.child.name,
-      questions
+      questions,
+      undefined,
+      topicReviews
     );
 
     await prisma.worksheet.update({

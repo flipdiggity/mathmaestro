@@ -1,0 +1,115 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared figure-schema prompt text.
+//
+// Both the normal worksheet prompt and the diagnostic prompt teach the model the
+// same structured "figure" schema so it emits real diagrams (coordinate planes,
+// number lines, triangles, data displays, ...) instead of describing graphs in
+// prose. The PDF renderer in src/lib/pdf/worksheet-template.tsx dispatches on
+// figure.kind. Keep this in sync with the Figure types in src/types/index.ts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Maps a topic's imageType to a short human hint about the figure it should emit.
+export const FIGURE_KIND_HINTS: Record<string, string> = {
+  'coordinate-plane':
+    'a coordinate plane — emit figure.kind "coordinate-plane" with xRange/yRange and the points, lines, functions, or polygons to draw',
+  'number-line':
+    'a number line — emit figure.kind "number-line" with min/max/majorTick and the markedPoints or intervals to draw',
+  'geometric-figure':
+    'a geometric figure — emit figure.kind "geometric-figure" with the shape and labeled sides/angles',
+  'data-display':
+    'a data display — emit figure.kind "data-display" with the display type (dot-plot, bar-chart, box-plot, scatter-plot, histogram) and its data',
+  'function-mapping':
+    'a function mapping diagram — emit figure.kind "function-mapping" with inputs, outputs, and mappings',
+  'fraction-model':
+    'a fraction model — emit figure.kind "fraction-model" with model, totalParts, and shadedParts',
+};
+
+export const FIGURE_SCHEMA_PROMPT = `
+FIGURES — HOW TO DRAW GRAPHS AND DIAGRAMS
+Many middle-school problems require a real visual: a plotted point, a graphed line, a
+number line with an interval, a labeled triangle, a box plot, etc. DO NOT describe these
+in words and DO NOT ask the student to imagine a grid. Instead, attach a structured
+"figure" object to the question. The system renders it as a real diagram.
+
+RULES:
+- Put the diagram in the "figure" field. Never describe coordinates, axes, or shapes to draw inside the question text itself.
+- Only attach a figure when the problem genuinely needs one. Plain arithmetic gets no figure (omit the field or set it to null).
+- When a problem asks the student to PLOT or GRAPH something themselves, give the figure the blank/partial canvas they work on (e.g. an empty coordinate plane with the right range), not the finished answer.
+- Use ASCII math operators in all text: >= <= != and write "pi", "sqrt", "x" for multiply, "deg" for degrees.
+
+The "figure" field is a JSON object with a "kind" discriminator. Supported kinds:
+
+1. coordinate-plane:
+   { "kind": "coordinate-plane", "xRange": [-5,5], "yRange": [-5,5], "xStep": 1, "yStep": 1,
+     "points": [{ "x": 3, "y": -2, "label": "(3,-2)", "style": "closed" }],
+     "lines": [{ "from": {"x":-4,"y":0}, "to": {"x":4,"y":8}, "style": "solid" }],
+     "functions": [{ "expression": "2*x - 3", "label": "y = 2x - 3" }],
+     "polygons": [{ "vertices": [{"x":0,"y":0},{"x":2,"y":0},{"x":2,"y":3}], "label": "A", "fillOpacity": 0.1 }] }
+   (include only the arrays you need; expressions use JS Math, e.g. "x*x", "Math.abs(x)")
+
+2. number-line:
+   { "kind": "number-line", "min": -2, "max": 12, "majorTick": 2, "minorTick": 1,
+     "markedPoints": [{ "value": 6, "style": "closed", "label": "x" }],
+     "intervals": [{ "from": 6, "to": 12, "fromStyle": "closed", "toStyle": "open" }] }
+
+3. geometric-figure:
+   { "kind": "geometric-figure", "shape": "right-triangle",
+     "parameters": { "legA": 3, "legB": 4 },
+     "labels": [{ "position": "side", "ref": "AB", "text": "3 cm" }, { "position": "side", "ref": "AC", "text": "4 cm" }] }
+   shapes: triangle, right-triangle, rectangle, square, circle, angle-pair,
+   parallel-lines-transversal, prism-3d, cylinder-3d, cone-3d, sphere-3d, pyramid-3d.
+   parameters depend on shape: right-triangle {legA,legB}; rectangle/square {width,height};
+   circle {radius}; angle-pair {type: "complementary"|"supplementary"|"vertical"};
+   3d shapes {width,height,depth} or {radius,height}. label.position is side|angle|vertex,
+   and ref names a side like "AB" or a vertex like "A".
+
+4. data-display:
+   { "kind": "data-display", "display": "box-plot", "fiveNumber": {"min":2,"q1":5,"median":8,"q3":12,"max":18} }
+   { "kind": "data-display", "display": "dot-plot", "values": [3,3,4,5,5,5,6] }
+   { "kind": "data-display", "display": "bar-chart", "categories": [{"label":"Mon","value":4},{"label":"Tue","value":7}] }
+   { "kind": "data-display", "display": "scatter-plot", "points": [{"x":1,"y":2},{"x":3,"y":5}], "trendLine": {"slope":1.5,"intercept":0.5} }
+
+5. fraction-model:
+   { "kind": "fraction-model", "model": "area-rectangle", "totalParts": 8, "shadedParts": 3 }
+   (models: area-rectangle, area-circle, bar; optional "compare": {totalParts, shadedParts} for side-by-side)
+
+6. function-mapping:
+   { "kind": "function-mapping", "inputs": [1,2,3], "outputs": [2,4,6], "mappings": [{"from":0,"to":0},{"from":1,"to":1},{"from":2,"to":2}], "inputLabel": "x", "outputLabel": "y" }
+
+WORKED EXAMPLES:
+- "Plot the point (3, -2) on the coordinate plane." ->
+  figure: { "kind": "coordinate-plane", "xRange": [-5,5], "yRange": [-5,5], "points": [{ "x": 3, "y": -2, "label": "(3,-2)", "style": "closed" }] }
+- "Graph the line y = 2x - 3." ->
+  figure: { "kind": "coordinate-plane", "xRange": [-5,5], "yRange": [-7,7], "functions": [{ "expression": "2*x - 3", "label": "y = 2x - 3" }] }
+- "Triangle ABC is a right triangle with legs 3 and 4. Find the hypotenuse." ->
+  figure: { "kind": "geometric-figure", "shape": "right-triangle", "parameters": { "legA": 3, "legB": 4 }, "labels": [{ "position": "side", "ref": "AB", "text": "3" }, { "position": "side", "ref": "AC", "text": "4" }] }
+- "Solve 2x - 3 >= 9 and graph the solution on a number line." ->
+  figure: { "kind": "number-line", "min": -2, "max": 12, "majorTick": 2, "intervals": [{ "from": 6, "to": 12, "fromStyle": "closed", "toStyle": "open" }] }
+`;
+
+// Teaches the model to emit a structured, machine-checkable expected answer so
+// the photo grader can grade drawn/graphed work — not just typed numbers.
+export const EXPECTED_ANSWER_SCHEMA_PROMPT = `
+EXPECTED ANSWER — HELP THE GRADER CHECK THE WORK
+Besides the plain "answer" string, add an "expectedAnswer" object whenever the answer
+can be described structurally. This lets the auto-grader check handwritten AND drawn
+answers precisely. Use the kind that best fits; omit (null) only for purely open-ended prose.
+
+Kinds:
+- { "kind": "numeric", "value": 30, "tolerance": 0, "unit": "mph" }   // tolerance optional
+- { "kind": "fraction", "value": "3/4" }                                // accepts equivalents
+- { "kind": "exact", "value": "yes" }                                   // short text answers
+- { "kind": "coordinate", "x": 3, "y": -2 }                             // a plotted point
+- { "kind": "coordinate-list", "points": [{"x":1,"y":2},{"x":3,"y":5}] }
+- { "kind": "linear-equation", "slope": 2, "intercept": -3 }            // graded by m and b
+- { "kind": "plotted-line", "through": [{"x":0,"y":-3},{"x":1,"y":-1}] } // a drawn line
+- { "kind": "interval", "from": 6, "to": 12, "fromStyle": "closed", "toStyle": "open" } // number-line solution
+- { "kind": "set", "values": ["-3/4","-1/2","0.25","0.4"], "ordered": true } // ordering problems
+- { "kind": "fraction-model", "totalParts": 8, "shadedParts": 3 }       // shade-the-model answers
+- { "kind": "explanation", "rubric": "must mention ..." }              // open-ended reasoning
+
+RULE: when a question has a "figure" the student draws on (plot a point, graph a line,
+shade a model, mark a number line), the expectedAnswer should describe the CORRECT
+drawing (coordinate / plotted-line / interval / fraction-model), so the grader can
+check the marks on the page.
+`;

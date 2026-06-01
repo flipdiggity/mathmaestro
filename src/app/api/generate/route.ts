@@ -108,6 +108,11 @@ export async function POST(request: NextRequest) {
         difficulty: q.difficulty,
         isVerifiable: q.isVerifiable,
         section: section as 'new' | 'review',
+        // Structured figure (preferred) — carry through whatever the model emitted.
+        figure: q.figure,
+        // Structured expected answer for the grader (optional).
+        expectedAnswer: q.expectedAnswer,
+        // Legacy fallback flags, kept for back-compat with the renderer.
         hasGrid: q.hasGrid || imgMeta?.requiresImage || false,
         gridType: q.gridType || (imgMeta?.imageType as Question['gridType']) || undefined,
       };

@@ -7,6 +7,25 @@ import { gradeWithMultipleImages } from '@/lib/anthropic';
 import { buildGradePrompt } from '@/lib/prompts/grade-worksheet';
 import { updateMastery } from '@/lib/spaced-repetition';
 import { Question, GradingQuestionResult } from '@/types';
+import sharp from 'sharp';
+
+// Preprocess a phone photo for the vision grader: auto-orient from EXIF (kids'
+// photos are often rotated), flatten onto white, grayscale + contrast-normalize
+// to make pencil legible, cap the long edge to keep the payload small, and
+// re-encode as JPEG. Falls back to the original bytes if sharp throws.
+async function preprocessPhoto(
+  input: Buffer
+): Promise<{ base64: string; mediaType: 'image/jpeg' }> {
+  const processed = await sharp(input)
+    .rotate() // auto-orient using EXIF
+    .flatten({ background: '#ffffff' })
+    .grayscale()
+    .normalize() // stretch contrast so faint pencil reads clearly
+    .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 82 })
+    .toBuffer();
+  return { base64: processed.toString('base64'), mediaType: 'image/jpeg' };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,13 +71,17 @@ export async function POST(request: NextRequest) {
         photoFiles.map(async (photo) => {
           const bytes = await photo.arrayBuffer();
           const buffer = Buffer.from(bytes);
-          const base64 = buffer.toString('base64');
 
-          let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg';
-          if (photo.type === 'image/png') mediaType = 'image/png';
-          else if (photo.type === 'image/webp') mediaType = 'image/webp';
-
-          return { base64, mediaType };
+          try {
+            return await preprocessPhoto(buffer);
+          } catch (sharpErr) {
+            // Sharp couldn't decode (unusual format, corrupt) — fall back to raw.
+            console.error('Photo preprocess failed, using raw image:', sharpErr);
+            let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg';
+            if (photo.type === 'image/png') mediaType = 'image/png';
+            else if (photo.type === 'image/webp') mediaType = 'image/webp';
+            return { base64: buffer.toString('base64'), mediaType };
+          }
         })
       );
     } catch (imgError) {

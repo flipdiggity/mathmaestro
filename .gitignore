@@ -53,3 +53,4 @@ scripts/generate-broll.sh
 scripts/dump-edmentum-page.js
 scripts/extract-edmentum.js
 scripts/extract-missing-lessons.js
+*.pdf

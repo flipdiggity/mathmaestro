@@ -321,6 +321,44 @@ function GeneratePageInner() {
   }
 
   // ------------------------------------------------------------------
+  // Generate a Week-1 diagnostic placement probe (ignores topic selection —
+  // the probe set is fixed per child in src/lib/curriculum/diagnostics.ts)
+  // ------------------------------------------------------------------
+  async function handleDiagnostic() {
+    if (!selectedChildId) return;
+
+    setGenerating(true);
+    setError(null);
+    setWorksheet(null);
+    setBatchWorksheets([]);
+    setShowAnswers(false);
+    setPacing(null);
+
+    try {
+      const res = await fetch('/api/diagnostic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: selectedChildId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Diagnostic generation failed');
+      setWorksheet({
+        id: data.worksheet.id,
+        title: data.worksheet.title,
+        dayOfWeek: 'Diagnostic',
+        weekNumber: 0,
+        questions: data.worksheet.questions,
+        topicIds: data.worksheet.topicIds,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setGenerating(false);
+      setGeneratingDay(null);
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Reset to generate another
   // ------------------------------------------------------------------
   function handleReset() {
@@ -854,23 +892,47 @@ function GeneratePageInner() {
 
         {/* Generate button */}
         {selectedChildId && (
-          <Button
-            size="lg"
-            className="w-full"
-            disabled={!canGenerate}
-            onClick={handleGenerate}
-          >
-            {generating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {generatingDay ? `Generating ${generatingDay}...` : 'Generating...'}
-              </>
-            ) : batchMode && selectedDays.size > 1 ? (
-              `Generate ${selectedDays.size} Worksheets`
-            ) : (
-              'Generate Worksheet'
-            )}
-          </Button>
+          <div className="space-y-2">
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={!canGenerate}
+              onClick={handleGenerate}
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {generatingDay ? `Generating ${generatingDay}...` : 'Generating...'}
+                </>
+              ) : batchMode && selectedDays.size > 1 ? (
+                `Generate ${selectedDays.size} Worksheets`
+              ) : (
+                'Generate Worksheet'
+              )}
+            </Button>
+
+            {/* Week-1 diagnostic — fixed placement probe, ignores topic selection */}
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full"
+              disabled={!selectedChildId || generating}
+              onClick={handleDiagnostic}
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                `Generate Diagnostic Probe${selectedChild ? ` for ${selectedChild.name}` : ''}`
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              A short Week-1 placement check. Print it, have {selectedChild?.name ?? 'your child'} complete it,
+              then photograph and grade it to seed their practice plan.
+            </p>
+          </div>
         )}
       </div>
     </div>

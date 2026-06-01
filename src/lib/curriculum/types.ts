@@ -1,3 +1,12 @@
+export interface BookRef {
+  title: string;
+  isbn: string;
+  chapter?: number;
+  chapters?: [number, number];
+  unit?: string;
+  note?: string;
+}
+
 export interface CurriculumTopic {
   id: string;
   tpiCode: string;         // TEKS Performance Indicator code
@@ -12,7 +21,8 @@ export interface CurriculumTopic {
   order: number;            // Sequence within grade
   nineWeeks: 1 | 2 | 3 | 4; // Which 9-weeks grading period this topic belongs to
   requiresImage?: boolean;
-  imageType?: 'coordinate-plane' | 'number-line';
+  imageType?: 'coordinate-plane' | 'number-line' | 'geometric-figure' | 'data-display' | 'function-mapping' | 'fraction-model';
+  bookRefs?: BookRef[];
 }
 
 export interface GradeCurriculum {

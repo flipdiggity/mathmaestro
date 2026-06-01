@@ -1,5 +1,6 @@
 import { TopicSelection } from '../curriculum/types';
 import { getCurrentNineWeeks, getNineWeeksDateRange, getNineWeeksLabel } from '../curriculum/pacing';
+import { FIGURE_KIND_HINTS, FIGURE_SCHEMA_PROMPT, EXPECTED_ANSWER_SCHEMA_PROMPT } from './figure-schema';
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -27,8 +28,9 @@ export function buildGeneratePrompt(
 
   function describeTopic(s: TopicSelection, i: number): string {
     const tag = getCalendarTag(s);
+    const kind = s.topic.imageType ?? 'coordinate-plane';
     const imageNote = s.topic.requiresImage
-      ? ` | IMAGE TOPIC: Describe the graph/figure in text and set hasGrid:true, gridType:"${s.topic.imageType ?? 'coordinate-plane'}"`
+      ? `\n   FIGURE REQUIRED: At least one problem for this topic must include a "figure" payload for ${FIGURE_KIND_HINTS[kind] ?? `figure.kind "${kind}"`}. Put the diagram in the figure field, never in the question text.`
       : '';
     return `${i + 1}. [${tag}] ${s.topic.name} (${s.topic.tpiCode}) - ${s.topic.description}
    Difficulty: ${s.topic.difficulty}/3 | Sample problems: ${s.topic.sampleProblems.join('; ')}${imageNote}`;
@@ -46,6 +48,8 @@ export function buildGeneratePrompt(
     ? `\n- Group questions by section: [CURRENT] topics first, then [REVIEW], then [PREVIEW] if any
 - Set the "section" field to "new" for CURRENT/PREVIEW questions and "review" for REVIEW questions`
     : '';
+
+  const anyFigureTopics = selections.some((s) => s.topic.requiresImage);
 
   const system = `You are an expert math teacher creating worksheets for ${childName}, a ${gradeLevel}th grade student in Eanes ISD, Austin TX. You create clear, age-appropriate math problems aligned to Texas TEKS standards.
 
@@ -67,11 +71,10 @@ CRITICAL RULES:
 - Number problems sequentially (1, 2, 3, ...)
 - Provide the correct answer for each problem
 - DO NOT include multiple choice - all problems should be free response
-- Each question must be UNIQUE — do not repeat the same problem with different numbers${sectionInstruction}`;
-
-  const imageSchemaFields = `
-      "hasGrid": false,
-      "gridType": null,`;
+- Each question must be UNIQUE — do not repeat the same problem with different numbers
+- Use ASCII math operators in all text: >= <= != ; write "pi", "sqrt", "x" for multiply, "deg" for degrees${sectionInstruction}
+${FIGURE_SCHEMA_PROMPT}
+${EXPECTED_ANSWER_SCHEMA_PROMPT}`;
 
   const prompt = `Create a math worksheet with ${totalQuestions} problems covering these topics:
 
@@ -83,8 +86,8 @@ IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific 
 
 DO NOT REPEAT these questions from previous days (use completely different numbers, contexts, and phrasings):
 ${previousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : ''}
-
-For topics marked IMAGE TOPIC: describe what the student should plot or identify in the question text, and set hasGrid to true with the appropriate gridType. The system will render the grid automatically.
+${anyFigureTopics ? `
+For any topic marked FIGURE REQUIRED above, attach a structured "figure" object (per the FIGURES section) to at least one of its problems. Put the diagram in the figure field — never describe the graph, grid, or shape in the question text. The system renders the figure as a real diagram.` : ''}
 
 Return ONLY valid JSON in this exact format (no markdown, no code fences):
 {
@@ -92,17 +95,21 @@ Return ONLY valid JSON in this exact format (no markdown, no code fences):
   "questions": [
     {
       "number": 1,
-      "question": "The full problem text",
+      "question": "The full problem text (no graph descriptions — use the figure field)",
       "answer": "The correct answer (number, fraction, or short text)",
       "topicId": "the topic ID from above",
       "topicName": "the topic name",
       "difficulty": 1,
       "isVerifiable": true,
-      "section": "new",${imageSchemaFields}
+      "section": "new",
+      "figure": null,
+      "expectedAnswer": null
     }
   ]
 }
 
+For "figure": include a structured figure object (see the FIGURES section) when the problem needs a diagram; otherwise use null.
+For "expectedAnswer": include a structured expected-answer object (see the EXPECTED ANSWER section) whenever the answer can be described structurally; otherwise use null.
 Set isVerifiable to true for problems with numeric/fraction answers, false for open-ended or explanation-type answers.
 Set section to "new" for CURRENT and PREVIEW topics, or "review" for REVIEW topics.`;
 
