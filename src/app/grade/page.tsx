@@ -23,6 +23,47 @@ import { PhotoUpload } from '@/components/grading/photo-upload';
 import { GradingResults } from '@/components/grading/grading-results';
 import { GradingQuestionResult } from '@/types';
 
+// Downscale + re-encode a photo in the browser before upload. Phone photos are
+// 2-3 MB each; four of them blow past Vercel's 4.5 MB request-body limit. The
+// server downscales again before sending to the model, so grading quality is
+// unaffected — this just keeps the upload small and fast. Falls back to the
+// original file if anything goes wrong.
+async function compressImage(file: File, maxDim = 1800, quality = 0.7): Promise<File> {
+  if (!file.type.startsWith('image/')) return file;
+  try {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('image decode failed'));
+      i.src = dataUrl;
+    });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const width = Math.round(img.width * scale);
+    const height = Math.round(img.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', quality)
+    );
+    if (!blob || blob.size >= file.size) return file; // keep original if no win
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', {
+      type: 'image/jpeg',
+    });
+  } catch {
+    return file;
+  }
+}
+
 interface Child {
   id: string;
   name: string;
@@ -131,7 +172,10 @@ function GradePageContent() {
     try {
       const formData = new FormData();
       formData.append('worksheetId', selectedWorksheetId);
-      for (const photo of photos) {
+      // Shrink photos in the browser so the combined upload stays under the
+      // server's request-body limit even for multi-page worksheets.
+      const compressed = await Promise.all(photos.map((p) => compressImage(p)));
+      for (const photo of compressed) {
         formData.append('photos', photo);
       }
 
@@ -140,13 +184,24 @@ function GradePageContent() {
         body: formData,
       });
 
-      const data = await res.json();
+      // Read as text first so a non-JSON error page (e.g. an oversized-upload
+      // rejection) produces a clear message instead of a cryptic parse error.
+      const raw = await res.text();
+      let data: { error?: string; gradingResult?: GradingResultData } = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        if (res.status === 413) {
+          throw new Error('Those photos were too large to upload. Try fewer pages at a time.');
+        }
+        throw new Error(`Grading failed (${res.status}). Please try again.`);
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Grading failed');
       }
 
-      setGradingResult(data.gradingResult);
+      setGradingResult(data.gradingResult ?? null);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'An unexpected error occurred.'
