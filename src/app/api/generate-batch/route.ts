@@ -8,6 +8,7 @@ import { selectTopics, type Pacing } from '@/lib/spaced-repetition';
 import { getTopicsForChild } from '@/lib/curriculum';
 import { buildGeneratePrompt } from '@/lib/prompts/generate-worksheet';
 import { verifyWorksheetAnswers } from '@/lib/answer-verifier';
+import { sanitizeStudentDrawFigure } from '@/lib/student-figure';
 import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -148,9 +149,9 @@ export async function POST(request: NextRequest) {
           isVerifiable: q.isVerifiable,
           section: section as 'new' | 'review',
           // Structured figure (preferred) — carry through whatever the model emitted.
-          figure: q.figure,
+          figure: sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer).figure,
           // Structured expected answer for the grader (optional).
-          expectedAnswer: q.expectedAnswer,
+          expectedAnswer: sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer).expectedAnswer,
           // Legacy fallback flags, kept for back-compat with the renderer.
           hasGrid: q.hasGrid || imgMeta?.requiresImage || false,
           gridType: q.gridType || (imgMeta?.imageType as Question['gridType']) || undefined,

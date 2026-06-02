@@ -73,19 +73,16 @@ HOW TO GRADE EACH ANSWER:
 ANSWER KEY (only these questions count):
 ${answerKey}
 
-Return ONLY valid JSON in this exact format (no markdown, no code fences):
+Return ONLY valid JSON in this exact format (no markdown, no code fences). To keep the response compact, do NOT echo the question text or the correct answer — just the fields below:
 {
   "results": [
     {
       "number": 1,
-      "question": "The original question text",
-      "correctAnswer": "The correct answer from the key",
       "studentAnswer": "What the student wrote/drew (as best you can read), or 'blank' if not found",
       "isCorrect": true,
       "feedback": "Brief feedback if incorrect or blank; empty string if correct"
     }
   ],
-  "totalQuestions": ${questions.length},
   "correctCount": 0,
   "scorePercent": 0
 }

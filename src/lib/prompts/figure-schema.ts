@@ -34,7 +34,9 @@ in words and DO NOT ask the student to imagine a grid. Instead, attach a structu
 RULES:
 - Put the diagram in the "figure" field. Never describe coordinates, axes, or shapes to draw inside the question text itself.
 - Only attach a figure when the problem genuinely needs one. Plain arithmetic gets no figure (omit the field or set it to null).
-- When a problem asks the student to PLOT or GRAPH something themselves, give the figure the blank/partial canvas they work on (e.g. an empty coordinate plane with the right range), not the finished answer.
+- BLANK CANVAS FOR STUDENT-DRAW TASKS: when the problem asks the student to plot, graph, draw, sketch, or mark something THEMSELVES, the figure must be an EMPTY canvas — a coordinate plane with only axes and the right xRange/yRange, or a number line with only ticks. Do NOT include the points/lines/functions/intervals that are the answer. Put the answer in "expectedAnswer" instead. (e.g. "Plot (3,-2)" -> figure is a blank plane; expectedAnswer is the point. NOT a plane with (3,-2) already drawn.)
+- DO show the figure when it is GIVEN for the student to READ (e.g. "What is the slope of the line shown?") — then the line belongs in the figure.
+- NO answer-revealing figure for purely algebraic questions. "Identify the slope and y-intercept of y = -4x + 9" is answered from the equation — do NOT attach a graph that draws/labels the line or intercept (that hands over the answer). Use figure: null.
 - Use ASCII math operators in all text: >= <= != and write "pi", "sqrt", "x" for multiply, "deg" for degrees.
 
 The "figure" field is a JSON object with a "kind" discriminator. Supported kinds:

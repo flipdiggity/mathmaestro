@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     let responseText;
     try {
-      responseText = await gradeWithMultipleImages(images, prompt, { system });
+      responseText = await gradeWithMultipleImages(images, prompt, { system, maxTokens: 8192 });
     } catch (aiError) {
       console.error('AI grading API error:', aiError);
       return NextResponse.json(
@@ -110,21 +110,51 @@ export async function POST(request: NextRequest) {
       cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     }
 
-    let gradingData: {
-      results: GradingQuestionResult[];
-      totalQuestions: number;
-      correctCount: number;
-      scorePercent: number;
+    // The model returns a compact result (number, studentAnswer, isCorrect,
+    // feedback) — it no longer echoes question text or the correct answer, which
+    // keeps the response small and avoids truncation at 50 questions. We backfill
+    // those fields here from the worksheet's own answer key.
+    let rawData: {
+      results: Array<{
+        number: number;
+        studentAnswer?: string;
+        isCorrect?: boolean;
+        feedback?: string;
+      }>;
     };
 
     try {
-      gradingData = JSON.parse(cleaned);
+      rawData = JSON.parse(cleaned);
     } catch {
       return NextResponse.json(
         { error: 'Failed to parse grading results', raw: responseText },
         { status: 500 }
       );
     }
+
+    const questionByNumber = new Map(questions.map((q) => [q.number, q]));
+    const gradedByNumber = new Map((rawData.results ?? []).map((r) => [r.number, r]));
+
+    // One enriched result per worksheet question, in order. Any question the
+    // model didn't return is treated as unanswered/incorrect.
+    const enrichedResults: GradingQuestionResult[] = questions.map((q) => {
+      const g = gradedByNumber.get(q.number);
+      return {
+        number: q.number,
+        question: q.question,
+        correctAnswer: q.answer,
+        studentAnswer: g?.studentAnswer ?? 'blank',
+        isCorrect: g?.isCorrect ?? false,
+        feedback: g?.feedback ?? (g ? '' : 'No answer found / left blank'),
+      };
+    });
+
+    const totalQuestions = enrichedResults.length;
+    const correctCount = enrichedResults.filter((r) => r.isCorrect).length;
+    const scorePercent =
+      totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 10000) / 100;
+
+    const gradingData = { results: enrichedResults, totalQuestions, correctCount, scorePercent };
 
     const gradingResult = await prisma.gradingResult.create({
       data: {

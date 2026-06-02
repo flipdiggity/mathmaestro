@@ -7,6 +7,7 @@ import { generateText } from '@/lib/anthropic';
 import { getDiagnosticProbe } from '@/lib/curriculum/diagnostics';
 import { buildDiagnosticPrompt } from '@/lib/prompts/diagnostic-worksheet';
 import { verifyWorksheetAnswers } from '@/lib/answer-verifier';
+import { sanitizeStudentDrawFigure } from '@/lib/student-figure';
 import { Question } from '@/types';
 
 // Generates a Week-1 diagnostic placement worksheet for a child. The result is
@@ -78,20 +79,23 @@ export async function POST(request: NextRequest) {
     }
 
     const verifiedQuestions = verifyWorksheetAnswers(parsed.questions);
-    const questions: Question[] = verifiedQuestions.map((q, idx) => ({
-      number: idx + 1,
-      question: q.question,
-      answer: q.answer,
-      topicId: q.topicId,
-      topicName: q.topicName,
-      difficulty: q.difficulty,
-      isVerifiable: q.isVerifiable,
-      section: 'new',
-      figure: q.figure,
-      expectedAnswer: q.expectedAnswer,
-      hasGrid: q.hasGrid || false,
-      gridType: q.gridType || undefined,
-    }));
+    const questions: Question[] = verifiedQuestions.map((q, idx) => {
+      const { figure, expectedAnswer } = sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer);
+      return {
+        number: idx + 1,
+        question: q.question,
+        answer: q.answer,
+        topicId: q.topicId,
+        topicName: q.topicName,
+        difficulty: q.difficulty,
+        isVerifiable: q.isVerifiable,
+        section: 'new' as const,
+        figure,
+        expectedAnswer,
+        hasGrid: q.hasGrid || false,
+        gridType: q.gridType || undefined,
+      };
+    });
 
     const title = `Diagnostic — ${probe.label}`;
 

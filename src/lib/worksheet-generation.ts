@@ -9,6 +9,7 @@ import { selectTopics } from './spaced-repetition';
 import { getTopicsForChild, getTopicById } from './curriculum';
 import { buildGeneratePrompt } from './prompts/generate-worksheet';
 import { verifyWorksheetAnswers } from './answer-verifier';
+import { sanitizeStudentDrawFigure } from './student-figure';
 import { TopicSelection } from './curriculum/types';
 import { Question } from '@/types';
 import type { TopicReviewRef } from './pdf/render';
@@ -91,6 +92,7 @@ export async function generateAdaptiveWorksheet(
   const questions: Question[] = verifiedQuestions.map((q, idx) => {
     const section = q.section || topicReasonMap.get(q.topicId) || 'new';
     const imgMeta = imageTopicMap.get(q.topicId);
+    const { figure, expectedAnswer } = sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer);
     return {
       number: idx + 1,
       question: q.question,
@@ -100,8 +102,8 @@ export async function generateAdaptiveWorksheet(
       difficulty: q.difficulty,
       isVerifiable: q.isVerifiable,
       section: section as 'new' | 'review',
-      figure: q.figure,
-      expectedAnswer: q.expectedAnswer,
+      figure,
+      expectedAnswer,
       hasGrid: q.hasGrid || imgMeta?.requiresImage || false,
       gridType: q.gridType || (imgMeta?.imageType as Question['gridType']) || undefined,
     };

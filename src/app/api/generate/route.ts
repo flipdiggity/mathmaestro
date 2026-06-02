@@ -8,6 +8,7 @@ import { selectTopics } from '@/lib/spaced-repetition';
 import { getTopicsForChild } from '@/lib/curriculum';
 import { buildGeneratePrompt } from '@/lib/prompts/generate-worksheet';
 import { verifyWorksheetAnswers } from '@/lib/answer-verifier';
+import { sanitizeStudentDrawFigure } from '@/lib/student-figure';
 import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -99,6 +100,8 @@ export async function POST(request: NextRequest) {
     const questions: Question[] = verifiedQuestions.map((q, idx) => {
       const section = q.section || topicReasonMap.get(q.topicId) || 'new';
       const imgMeta = imageTopicMap.get(q.topicId);
+      // Blank out the answer for "student draws it" figures (plot/graph/draw).
+      const { figure, expectedAnswer } = sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer);
       return {
         number: idx + 1,
         question: q.question,
@@ -109,9 +112,9 @@ export async function POST(request: NextRequest) {
         isVerifiable: q.isVerifiable,
         section: section as 'new' | 'review',
         // Structured figure (preferred) — carry through whatever the model emitted.
-        figure: q.figure,
+        figure,
         // Structured expected answer for the grader (optional).
-        expectedAnswer: q.expectedAnswer,
+        expectedAnswer,
         // Legacy fallback flags, kept for back-compat with the renderer.
         hasGrid: q.hasGrid || imgMeta?.requiresImage || false,
         gridType: q.gridType || (imgMeta?.imageType as Question['gridType']) || undefined,

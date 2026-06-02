@@ -13,7 +13,24 @@ import { buildDailyEmailHtml, ChildReport } from '@/lib/daily-email-template';
 export const maxDuration = 300;
 
 async function runDailyEmail(): Promise<{ status: number; body: Record<string, unknown> }> {
-  const children = await prisma.child.findMany({ orderBy: { grade: 'desc' } });
+  const allChildren = await prisma.child.findMany({
+    orderBy: { grade: 'desc' },
+    include: { _count: { select: { worksheets: true } } },
+  });
+
+  // Defensive dedupe: if duplicate child rows exist for the same name (e.g. a
+  // kid was added twice), keep only the one with the most worksheet history so
+  // we don't email two sets per kid.
+  const byName = new Map<string, (typeof allChildren)[number]>();
+  for (const c of allChildren) {
+    const key = c.name.trim().toLowerCase();
+    const existing = byName.get(key);
+    if (!existing || c._count.worksheets > existing._count.worksheets) {
+      byName.set(key, c);
+    }
+  }
+  const children = Array.from(byName.values());
+
   if (children.length === 0) {
     return { status: 200, body: { ok: true, message: 'No children to generate for' } };
   }
