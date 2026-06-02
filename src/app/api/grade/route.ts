@@ -132,7 +132,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const questionByNumber = new Map(questions.map((q) => [q.number, q]));
     const gradedByNumber = new Map((rawData.results ?? []).map((r) => [r.number, r]));
 
     // One enriched result per worksheet question, in order. Any question the
