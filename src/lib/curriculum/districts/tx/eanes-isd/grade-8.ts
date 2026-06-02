@@ -27,7 +27,7 @@ export const grade8Curriculum: GradeCurriculum = {
       imageType: 'geometric-figure',
       bookRefs: [
         { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 1, note: "Types of Numbers" },
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 34, note: "Square and Cube Roots" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 33, note: "Square and Cube Roots" },
       ],
     },
     {
@@ -51,8 +51,8 @@ export const grade8Curriculum: GradeCurriculum = {
       requiresImage: true,
       imageType: 'number-line',
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 34, note: "Square and Cube Roots" },
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 35, note: "Comparing Irrationals" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 33, note: "Square and Cube Roots" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 34, note: "Comparing Irrationals" },
       ],
     },
     {
@@ -74,7 +74,7 @@ export const grade8Curriculum: GradeCurriculum = {
       order: 3,
       nineWeeks: 1,
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 33, note: "Scientific Notation" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 32, note: "Scientific Notation" },
       ],
     },
     {
@@ -96,7 +96,7 @@ export const grade8Curriculum: GradeCurriculum = {
       order: 4,
       nineWeeks: 1,
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 35, note: "Comparing Irrationals" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 34, note: "Comparing Irrationals" },
       ],
     },
 
@@ -359,7 +359,7 @@ export const grade8Curriculum: GradeCurriculum = {
       requiresImage: true,
       imageType: 'data-display',
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [51, 56], unit: "Statistics and Probability" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [52, 53], note: "Statistics — data displays and variation" },
       ],
     },
     {
@@ -383,7 +383,7 @@ export const grade8Curriculum: GradeCurriculum = {
       requiresImage: true,
       imageType: 'data-display',
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [51, 56], unit: "Statistics and Probability" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [52, 53], note: "Statistics — data displays and variation" },
       ],
     },
     {
@@ -407,7 +407,7 @@ export const grade8Curriculum: GradeCurriculum = {
       requiresImage: true,
       imageType: 'data-display',
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [51, 56], unit: "Statistics and Probability" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [52, 53], note: "Statistics — data displays and variation" },
       ],
     },
     {
@@ -429,7 +429,7 @@ export const grade8Curriculum: GradeCurriculum = {
       order: 18,
       nineWeeks: 3,
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [51, 56], unit: "Statistics and Probability" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [52, 53], note: "Statistics — data displays and variation" },
       ],
     },
 
@@ -547,8 +547,8 @@ export const grade8Curriculum: GradeCurriculum = {
       requiresImage: true,
       imageType: 'geometric-figure',
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 48, note: "Volume" },
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [46, 47], note: "3D Figures" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 47, note: "Volume" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 46, note: "3D Figures" },
       ],
     },
     {
@@ -572,7 +572,7 @@ export const grade8Curriculum: GradeCurriculum = {
       requiresImage: true,
       imageType: 'geometric-figure',
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 49, note: "Surface Area" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 48, note: "Surface Area" },
       ],
     },
     {
@@ -670,7 +670,7 @@ export const grade8Curriculum: GradeCurriculum = {
       requiresImage: true,
       imageType: 'geometric-figure',
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 41, note: "Angles" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 49, note: "Angles, Triangles, and Transversal Lines" },
         { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 50, note: "Similar Figures and Scale Drawings" },
       ],
     },
@@ -700,6 +700,9 @@ export const grade8Curriculum: GradeCurriculum = {
     },
     {
       id: "8.tr.1",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 62, note: "Transformations" },
+      ],
       tpiCode: "8.10A",
       name: "Translations on the Coordinate Plane",
       description:
@@ -721,6 +724,9 @@ export const grade8Curriculum: GradeCurriculum = {
     },
     {
       id: "8.tr.2",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 62, note: "Transformations" },
+      ],
       tpiCode: "8.10B",
       name: "Reflections on the Coordinate Plane",
       description:
@@ -742,6 +748,9 @@ export const grade8Curriculum: GradeCurriculum = {
     },
     {
       id: "8.tr.3",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 62, note: "Transformations" },
+      ],
       tpiCode: "8.10C/8.10D",
       name: "Rotations on the Coordinate Plane",
       description:
@@ -782,7 +791,7 @@ export const grade8Curriculum: GradeCurriculum = {
       order: 33,
       nineWeeks: 4,
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 25, note: "Simple Interest" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 24, note: "Simple Interest" },
       ],
     },
     {
@@ -804,7 +813,7 @@ export const grade8Curriculum: GradeCurriculum = {
       order: 34,
       nineWeeks: 4,
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 25, unit: "Expressions and Equations", note: "Simple Interest — closest available; PFL topics covered conceptually" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 24, unit: "Ratios, Proportions, and Percents", note: "Simple Interest — closest available; PFL topics covered conceptually" },
       ],
     },
     {
@@ -826,7 +835,7 @@ export const grade8Curriculum: GradeCurriculum = {
       order: 35,
       nineWeeks: 4,
       bookRefs: [
-        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 25, unit: "Expressions and Equations", note: "Simple Interest — closest available; PFL topics covered conceptually" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 24, unit: "Ratios, Proportions, and Percents", note: "Simple Interest — closest available; PFL topics covered conceptually" },
       ],
     },
   ],

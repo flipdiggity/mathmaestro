@@ -118,7 +118,7 @@ export const grade5Curriculum: GradeCurriculum = {
       order: 5,
       nineWeeks: 1,
       bookRefs: [
-        { title: "Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [27, 30], unit: "Unit 3 — Expressions and Equations", note: "Order of operations" },
+        { title: "Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 31, unit: "Unit 3 — Expressions and Equations", note: "Order of operations" },
       ],
     },
     {
@@ -444,7 +444,7 @@ export const grade5Curriculum: GradeCurriculum = {
       order: 19,
       nineWeeks: 2,
       bookRefs: [
-        { title: "Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [27, 30], unit: "Unit 3 — Expressions and Equations" },
+        { title: "Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [27, 31], unit: "Unit 3 — Expressions and Equations" },
       ],
     },
   ],

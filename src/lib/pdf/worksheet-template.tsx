@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
   },
   figureContainer: { marginTop: 4, marginBottom: 8, alignItems: 'center' },
   figureCaption: { fontSize: 8, color: '#666', marginTop: 2 },
+  bookRefLine: { fontSize: 8, color: '#6366f1', marginTop: 3 },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1277,49 +1278,30 @@ function formatBookRef(ref: BookRef): string {
   return '';
 }
 
-function renderQuestion(q: Question) {
+function formatBookRefs(refs?: BookRef[]): string {
+  if (!refs || refs.length === 0) return '';
+  const parts = refs
+    .map((r) => {
+      const where = formatBookRef(r);
+      const note = r.note ? ` (${r.note})` : '';
+      return where ? `${where}${note}` : '';
+    })
+    .filter(Boolean);
+  return parts.length ? `Book: ${parts.join(', ')}` : '';
+}
+
+function renderQuestion(q: Question, refsByTopic?: Map<string, BookRef[] | undefined>) {
+  const refLine = formatBookRefs(refsByTopic?.get(q.topicName));
   return (
     <View key={q.number} style={styles.questionBlock} wrap={false}>
       <Text>
         <Text style={styles.questionNumber}>{q.number}. </Text>
         <Text style={styles.questionText}>{asciifyMath(q.question)}</Text>
       </Text>
+      {refLine ? <Text style={styles.bookRefLine}>{refLine}</Text> : null}
       {q.figure ? renderFigure(q.figure) : (q.hasGrid && renderLegacyGrid(q))}
       <View style={styles.answerSpace} />
       <Text style={styles.answerLabel}>Answer</Text>
-    </View>
-  );
-}
-
-function ReviewBlock({ topicReviews }: { topicReviews: TopicReviewRef[] }) {
-  // Deduplicate by topicName, collect book refs
-  const seen = new Set<string>();
-  const items = topicReviews.filter((t) => {
-    if (seen.has(t.topicName)) return false;
-    seen.add(t.topicName);
-    return t.bookRefs && t.bookRefs.length > 0;
-  });
-  if (items.length === 0) return null;
-
-  return (
-    <View style={styles.reviewBlock}>
-      <Text style={styles.reviewHeader}>Before you start — review these sections</Text>
-      {items.map((item, i) => {
-        const refs = (item.bookRefs ?? [])
-          .map((r) => {
-            const where = formatBookRef(r);
-            const note = r.note ? ` (${r.note})` : '';
-            return `${where}${note}`;
-          })
-          .filter(Boolean)
-          .join(', ');
-        return (
-          <Text key={i} style={styles.reviewRow}>
-            <Text style={styles.reviewTopic}>{item.topicName}</Text>
-            {refs ? ` — ${refs}` : ''}
-          </Text>
-        );
-      })}
     </View>
   );
 }
@@ -1337,6 +1319,11 @@ function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
 
   const newQuestions = hasSections ? questions.filter((q) => q.section === 'new') : [];
   const reviewQuestions = hasSections ? questions.filter((q) => q.section === 'review') : [];
+
+  // Look up each question's book chapters by topic name, shown under the question.
+  const refsByTopic = new Map<string, BookRef[] | undefined>(
+    (topicReviews ?? []).map((t) => [t.topicName, t.bookRefs])
+  );
 
   return (
     <Page size="LETTER" style={styles.page}>
@@ -1361,8 +1348,6 @@ function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
         </View>
       </View>
 
-      {topicReviews && topicReviews.length > 0 && <ReviewBlock topicReviews={topicReviews} />}
-
       {hasSections ? (
         <>
           {newQuestions.length > 0 && (
@@ -1370,7 +1355,7 @@ function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionHeaderText}>New Topics</Text>
               </View>
-              {newQuestions.map(renderQuestion)}
+              {newQuestions.map((q) => renderQuestion(q, refsByTopic))}
             </>
           )}
           {reviewQuestions.length > 0 && (
@@ -1378,12 +1363,12 @@ function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionHeaderText}>Review</Text>
               </View>
-              {reviewQuestions.map(renderQuestion)}
+              {reviewQuestions.map((q) => renderQuestion(q, refsByTopic))}
             </>
           )}
         </>
       ) : (
-        questions.map(renderQuestion)
+        questions.map((q) => renderQuestion(q, refsByTopic))
       )}
 
       <Text style={styles.footer}>

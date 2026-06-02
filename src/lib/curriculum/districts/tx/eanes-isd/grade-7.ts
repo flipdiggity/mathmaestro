@@ -7,6 +7,9 @@ export const grade7Curriculum: GradeCurriculum = {
     // ─── Strand 1: Rational Numbers (TEKS 7.2) ───────────────────────────
     {
       id: "7.ns.1",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 1, note: "Types of Numbers and the Number Line" },
+      ],
       tpiCode: "7.2A",
       name: "Representations of Rational Numbers",
       description:
@@ -26,6 +29,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.ns.2",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 1, note: "Types of Numbers and the Number Line" },
+      ],
       tpiCode: "7.2A",
       name: "Comparing and Ordering Rational Numbers",
       description:
@@ -44,6 +50,10 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.ns.3",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 19, note: "Percent" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 6, note: "Fraction Basics" },
+      ],
       tpiCode: "7.2B",
       name: "Converting Between Fractions, Decimals, and Percents",
       description:
@@ -63,6 +73,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.ns.4",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [11, 12], note: "Adding and Subtracting Positive and Negative Numbers" },
+      ],
       tpiCode: "7.3A",
       name: "Adding and Subtracting Rational Numbers",
       description:
@@ -82,6 +95,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.ns.5",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 13, note: "Multiplying and Dividing Positive and Negative Numbers" },
+      ],
       tpiCode: "7.3A",
       name: "Multiplying and Dividing Rational Numbers",
       description:
@@ -103,6 +119,10 @@ export const grade7Curriculum: GradeCurriculum = {
     // ─── Strand 2: Expressions & Equations (TEKS 7.3) ────────────────────
     {
       id: "7.ee.1",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 29, note: "Like Terms" },
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 27, note: "Expressions" },
+      ],
       tpiCode: "7.3B",
       name: "Simplifying Expressions and Combining Like Terms",
       description:
@@ -122,6 +142,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.ee.2",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 28, note: "Properties (Distributive Property)" },
+      ],
       tpiCode: "7.3C",
       name: "Distributive Property",
       description:
@@ -141,6 +164,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.ee.3",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 36, note: "Solving for Variables" },
+      ],
       tpiCode: "7.3B",
       name: "Solving Two-Step Equations",
       description:
@@ -160,6 +186,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.ee.4",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 39, note: "Word Problems with Equations and Inequalities" },
+      ],
       tpiCode: "7.3A",
       name: "Writing Equations from Word Problems",
       description:
@@ -180,6 +209,9 @@ export const grade7Curriculum: GradeCurriculum = {
     // ─── Strand 3: Inequalities (TEKS 7.4) ───────────────────────────────
     {
       id: "7.iq.1",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 38, note: "Solving and Graphing Inequalities" },
+      ],
       tpiCode: "7.4A",
       name: "Writing and Graphing Inequalities",
       description:
@@ -199,6 +231,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.iq.2",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 38, note: "Solving and Graphing Inequalities" },
+      ],
       tpiCode: "7.4A",
       name: "Solving One-Step and Two-Step Inequalities",
       description:
@@ -220,6 +255,9 @@ export const grade7Curriculum: GradeCurriculum = {
     // ─── Strand 4: Proportional Relationships (TEKS 7.4-7.5) ─────────────
     {
       id: "7.pr.1",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [16, 17], note: "Unit Rate, Unit Price, and Proportions" },
+      ],
       tpiCode: "7.4B",
       name: "Constant of Proportionality and Unit Rates",
       description:
@@ -239,6 +277,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.pr.2",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 17, note: "Proportions" },
+      ],
       tpiCode: "7.4C",
       name: "Proportional vs. Non-Proportional Relationships",
       description:
@@ -257,6 +298,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.pr.3",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 25, note: "Percent Rate of Change" },
+      ],
       tpiCode: "7.4D",
       name: "Percent Increase and Decrease",
       description:
@@ -276,6 +320,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.pr.4",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapters: [21, 23], note: "Taxes/Fees, Discounts/Markups, Gratuity/Commission" },
+      ],
       tpiCode: "7.4E",
       name: "Markup, Markdown, Tax, Tip, and Commission",
       description:
@@ -295,6 +342,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.pr.5",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 24, note: "Simple Interest" },
+      ],
       tpiCode: "7.4F",
       name: "Simple Interest",
       description:
@@ -315,6 +365,9 @@ export const grade7Curriculum: GradeCurriculum = {
     // ─── Strand 5: Linear Relationships (TEKS 7.7) ───────────────────────
     {
       id: "7.lr.1",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 58, note: "Linear Equations and Functions" },
+      ],
       tpiCode: "7.7A",
       name: "Representing Linear Relationships",
       description:
@@ -336,6 +389,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.lr.2",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 57, note: "Slope" },
+      ],
       tpiCode: "7.7A",
       name: "Slope and Rate of Change",
       description:
@@ -357,6 +413,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.lr.3",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 58, note: "Linear Equations and Functions" },
+      ],
       tpiCode: "7.7A",
       name: "Y-Intercept and Direct Variation",
       description:
@@ -380,6 +439,9 @@ export const grade7Curriculum: GradeCurriculum = {
     // ─── Strand 6: Proportional Geometry (TEKS 7.5) ──────────────────────
     {
       id: "7.pg.1",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 50, note: "Similar Figures and Scale Drawings" },
+      ],
       tpiCode: "7.5A",
       name: "Scale Drawings and Scale Factors",
       description:
@@ -399,6 +461,9 @@ export const grade7Curriculum: GradeCurriculum = {
     },
     {
       id: "7.pg.2",
+      bookRefs: [
+        { title: "The Big Fat Middle School Math Workbook", isbn: "9781523513581", chapter: 50, note: "Similar Figures and Scale Drawings" },
+      ],
       tpiCode: "7.5B",
       name: "Similar Figures and Proportional Reasoning",
       description:
@@ -447,7 +512,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapters: [30, 33],
+          chapter: 38,
           unit: "Algebra: Equations and Inequalities",
           note: "Graphing solutions on number lines",
         },
@@ -476,7 +541,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapters: [30, 32],
+          chapter: 39,
           unit: "Algebra: Equations",
           note: "Writing equations from contexts (reverse direction)",
         },
@@ -505,7 +570,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapters: [30, 33],
+          chapter: 36,
           unit: "Algebra: Equations and Inequalities",
           note: "Checking solutions by substitution",
         },
@@ -565,7 +630,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapters: [15, 26],
+          chapter: 18,
           unit: "Ratios, Proportions, and Percents",
           note: "Customary/metric conversions via proportions",
         },
@@ -914,7 +979,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 48,
+          chapter: 47,
           unit: "Geometry",
           note: "Volume of prisms",
         },
@@ -945,7 +1010,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 48,
+          chapter: 47,
           unit: "Geometry",
           note: "Volume of pyramids",
         },
@@ -976,7 +1041,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 49,
+          chapter: 48,
           unit: "Geometry",
           note: "Surface area and nets of 3D figures",
         },
@@ -1009,7 +1074,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapters: [51, 56],
+          chapter: 53,
           unit: "Statistics",
           note: "Box plots, dot plots, and the five-number summary",
         },
@@ -1040,7 +1105,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapters: [51, 56],
+          chapter: 52,
           unit: "Statistics",
           note: "Comparing data sets with center and spread",
         },
@@ -1069,7 +1134,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapters: [51, 56],
+          chapter: 51,
           unit: "Statistics",
           note: "Random sampling and inferences about populations",
         },
@@ -1100,7 +1165,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 25,
+          chapter: 24,
           unit: "Ratios, Proportions, and Percents",
           note: "Financial literacy basics; assets, liabilities, and net worth",
         },
@@ -1129,7 +1194,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 25,
+          chapter: 24,
           unit: "Ratios, Proportions, and Percents",
           note: "Financial literacy: credit history and credit reports",
         },
@@ -1158,7 +1223,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 25,
+          chapter: 24,
           unit: "Ratios, Proportions, and Percents",
           note: "Financial literacy: debit vs. credit cards",
         },
@@ -1187,7 +1252,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 25,
+          chapter: 24,
           unit: "Ratios, Proportions, and Percents",
           note: "Simple interest and loan costs over time",
         },
@@ -1216,7 +1281,7 @@ export const grade7Curriculum: GradeCurriculum = {
         {
           title: "Big Fat Middle School Math Workbook",
           isbn: "9781523513581",
-          chapter: 25,
+          chapter: 24,
           unit: "Ratios, Proportions, and Percents",
           note: "College savings, simple interest, and planning",
         },

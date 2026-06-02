@@ -359,6 +359,31 @@ function GeneratePageInner() {
   }
 
   // ------------------------------------------------------------------
+  // Change a child's pace (standard <-> accelerated). Accelerated pulls in the
+  // next grade's topics, so it persists on the child and refetches the topic list.
+  // ------------------------------------------------------------------
+  const [savingPace, setSavingPace] = useState(false);
+  async function handlePaceChange(track: string) {
+    if (!selectedChildId) return;
+    setSavingPace(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/children/${selectedChildId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ track }),
+      });
+      if (!res.ok) throw new Error('Could not update pace');
+      setChildren((prev) => prev.map((c) => (c.id === selectedChildId ? { ...c, track } : c)));
+      fetchTopics(selectedChildId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update pace');
+    } finally {
+      setSavingPace(false);
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Reset to generate another
   // ------------------------------------------------------------------
   function handleReset() {
@@ -719,6 +744,34 @@ function GeneratePageInner() {
                   ))}
                 </SelectContent>
               </Select>
+            )}
+
+            {selectedChild && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-1">Pace</p>
+                <Select
+                  value={selectedChild.track === 'accelerated' ? 'accelerated' : 'standard'}
+                  onValueChange={handlePaceChange}
+                  disabled={savingPace}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="standard">On grade level (Grade {selectedChild.grade})</SelectItem>
+                    <SelectItem value="accelerated">
+                      Accelerated (adds Grade {selectedChild.grade + 1} material)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {savingPace
+                    ? 'Updating…'
+                    : selectedChild.track === 'accelerated'
+                      ? `${selectedChild.name} is on the accelerated track — worksheets mix in next-grade topics.`
+                      : `Switch to accelerated if this is too easy — it pulls in Grade ${selectedChild.grade + 1} topics.`}
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
