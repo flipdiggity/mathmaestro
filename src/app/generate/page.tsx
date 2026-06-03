@@ -116,6 +116,19 @@ function GeneratePageInner() {
   const searchParams = useSearchParams();
 
   // ------------------------------------------------------------------
+  // Reset to the form when the header "Generate" link is clicked while we're
+  // already on this page (it pushes a one-time ?fresh=<nonce> signal).
+  // ------------------------------------------------------------------
+  const freshSignal = searchParams.get('fresh');
+  useEffect(() => {
+    setWorksheet(null);
+    setBatchWorksheets([]);
+    setShowAnswers(false);
+    setError(null);
+    setPacing(null);
+  }, [freshSignal]);
+
+  // ------------------------------------------------------------------
   // Fetch children on mount
   // ------------------------------------------------------------------
   useEffect(() => {

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
 import { MobileNav } from "@/components/nav/mobile-nav";
+import { SmartLink } from "@/components/nav/smart-link";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -54,13 +55,13 @@ export default function RootLayout({
 
             <div className="hidden sm:flex items-center gap-6">
               {navLinks.map((link) => (
-                <Link
+                <SmartLink
                   key={link.href}
                   href={link.href}
                   className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   {link.label}
-                </Link>
+                </SmartLink>
               ))}
             </div>
             <div className="flex items-center gap-3 sm:hidden">

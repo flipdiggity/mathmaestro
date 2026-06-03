@@ -101,6 +101,14 @@ function GradePageContent() {
   const [gradingResult, setGradingResult] = useState<GradingResultData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset to the form when the header "Grade" link is clicked while already here
+  // (it pushes a one-time ?fresh=<nonce> signal).
+  const freshSignal = searchParams.get('fresh');
+  useEffect(() => {
+    setGradingResult(null);
+    setError(null);
+  }, [freshSignal]);
+
   // Fetch children on mount
   useEffect(() => {
     async function fetchChildren() {
