@@ -20,11 +20,24 @@ const DRAW_INTENT =
 
 // Phrases that mean the figure is GIVEN to read, not drawn by the student.
 const GIVEN_HINT =
-  /\b(shown|shows|below|above|pictured|displayed)\b|from the (graph|figure|diagram)/i;
+  /\b(shown|shows|represents|represented|below|above|pictured|displayed)\b|from the (graph|figure|diagram)/i;
 
 function isStudentDrawTask(questionText: string): boolean {
   if (GIVEN_HINT.test(questionText)) return false;
   return DRAW_INTENT.test(questionText);
+}
+
+// Decide whether to blank a figure's answer elements.
+// - Number lines are a workspace for the student in almost all cases, so we
+//   blank the markers/intervals UNLESS the question explicitly says something is
+//   "shown" on them (e.g. "what value is shown on the number line?"). This
+//   catches "locate / between which integers / order on a number line" tasks
+//   that have no explicit draw verb but would otherwise reveal the answer.
+// - Coordinate planes are often GIVEN to read (e.g. "find the slope of the line
+//   through (2,7) and (6,-1)"), so we only blank them on an explicit draw verb.
+function shouldBlankFigure(kind: 'coordinate-plane' | 'number-line', questionText: string): boolean {
+  if (kind === 'number-line') return !GIVEN_HINT.test(questionText);
+  return isStudentDrawTask(questionText);
 }
 
 // Try to read a linear expression like "2*x - 3" / "2x+1" / "-4*x + 9".
@@ -93,7 +106,7 @@ export function sanitizeStudentDrawFigure(
   if (figure.kind !== 'coordinate-plane' && figure.kind !== 'number-line') {
     return { figure, expectedAnswer };
   }
-  if (!isStudentDrawTask(questionText)) return { figure, expectedAnswer };
+  if (!shouldBlankFigure(figure.kind, questionText)) return { figure, expectedAnswer };
 
   const synthesized = expectedAnswer ?? synthesizeExpected(figure);
 

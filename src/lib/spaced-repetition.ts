@@ -1,13 +1,13 @@
 import { CurriculumTopic, TopicSelection } from './curriculum/types';
-import { getCurrentNineWeeks } from './curriculum/pacing';
 import { prisma } from './db';
-
-interface MasteryRecord {
-  topicId: string;
-  mastery: number;
-  lastPracticedAt: Date | null;
-  timesPracticed: number;
-}
+import {
+  orderedSequence,
+  floorIndexFor,
+  getStartFloor,
+  seqCountsFor,
+  selectSequential,
+  SeqMastery,
+} from './curriculum/sequencing';
 
 export type Pacing = 'accelerating' | 'steady' | 'reinforcing';
 
@@ -46,254 +46,50 @@ export async function getPacingRecommendation(childId: string): Promise<Pacing> 
 }
 
 /**
- * Select topics for a worksheet using calendar-aware spaced repetition.
+ * Select topics for a worksheet by walking the curriculum IN SEQUENCE.
  *
- * Topic allocation by nine-weeks period:
- * - ~60% current nine-weeks topics (primary focus)
- * - ~25% previous nine-weeks review (only low-mastery, capped)
- * - ~15% preview/spillover (future topics or if current is mastered)
+ * Builds the global teaching order ((gradeLevel, order)), finds the student's
+ * frontier (first not-yet-mastered topic at/after their start floor), and picks
+ * a FEW focused topics: the next unmastered topics (current), a little review of
+ * earlier weak spots, and a small preview ahead. This keeps worksheets
+ * sequential and building, instead of scattering across the whole year.
  *
- * Within each bucket, mastery-based sorting is preserved.
- * Pacing modifiers (accelerating/reinforcing) still apply.
- *
- * @param excludeNewTopicIds - topic IDs to exclude from new selections (for multi-day batches)
+ * @param excludeNewTopicIds - topic IDs to exclude from new selections (for multi-day batches, so each day advances)
  */
 export async function selectTopics(
   childId: string,
   topics: CurriculumTopic[],
   totalQuestions: number = 30,
-  targetTestDate?: Date | null,
+  _targetTestDate?: Date | null,
   excludeNewTopicIds?: Set<string>
 ): Promise<SelectTopicsResult> {
-  // Get existing mastery records for this child
-  const masteryRecords = await prisma.topicMastery.findMany({
-    where: { childId },
-  });
-
-  const masteryMap = new Map<string, MasteryRecord>();
-  for (const record of masteryRecords) {
-    masteryMap.set(record.topicId, {
-      topicId: record.topicId,
-      mastery: record.mastery,
-      lastPracticedAt: record.lastPracticedAt,
-      timesPracticed: record.timesPracticed,
+  const masteryRecords = await prisma.topicMastery.findMany({ where: { childId } });
+  const masteryMap = new Map<string, SeqMastery>();
+  for (const r of masteryRecords) {
+    masteryMap.set(r.topicId, {
+      mastery: r.mastery,
+      lastPracticedAt: r.lastPracticedAt,
+      timesPracticed: r.timesPracticed,
     });
   }
 
-  const now = new Date();
+  const child = await prisma.child.findUnique({ where: { id: childId } });
+  const baseGrade = child?.grade ?? Math.min(...topics.map((t) => t.gradeLevel));
+  const childName = child?.name ?? '';
 
-  // ── Test-prep compressed pacing ─────────────────────────────────
-  // If we have a targetTestDate, use compressed pacing that maps
-  // calendar weeks to curriculum nine-weeks. This covers 18+ weeks
-  // of material in the time remaining before the test.
-  //
-  // Week schedule (divide remaining time into 4 equal segments):
-  //   Segment 1 → nineWeeks 1 topics as "current"
-  //   Segment 2 → nineWeeks 2 topics as "current"
-  //   Segment 3 → nineWeeks 3 topics as "current"
-  //   Segment 4 → review all (nineWeeks 1-2 primary focus)
-  //
-  // Previous segments become "review", future segments become "preview".
-  let currentNW: 1 | 2 | 3 | 4;
-
-  if (targetTestDate) {
-    const daysUntilTest = Math.max(1, (targetTestDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    const totalPrepDays = 30; // approximate total prep period
-    const daysSinceStart = Math.max(0, totalPrepDays - daysUntilTest);
-    const segmentLength = totalPrepDays / 4;
-    const segment = Math.min(3, Math.floor(daysSinceStart / segmentLength));
-
-    // Map segments: 0→NW1, 1→NW2, 2→NW3, 3→NW4 (review)
-    // But for review week (segment 3), set to NW1 so 1st/2nd NW are "current" + "previous"
-    if (segment >= 3) {
-      currentNW = 1; // Review week: focus on NW1-2 material
-    } else {
-      currentNW = (segment + 1) as 1 | 2 | 3 | 4;
-    }
-  } else {
-    currentNW = getCurrentNineWeeks(now);
-  }
-
-  // Get pacing recommendation
   const pacing = await getPacingRecommendation(childId);
 
-  // Bucket topics by nine-weeks period relative to current
-  const currentTopics = topics.filter((t) => t.nineWeeks === currentNW);
-  const previousTopics = topics.filter((t) => t.nineWeeks < currentNW);
-  const futureTopics = topics.filter((t) => t.nineWeeks > currentNW);
+  const seq = orderedSequence(topics);
+  const floorIndex = floorIndexFor(seq, getStartFloor(childName, baseGrade));
+  const counts = seqCountsFor(totalQuestions, pacing);
 
-  // Slot allocation — adjust by pacing
-  // Allocation ratios: current + review, preview = remainder
-  let currentRatio: number;
-  let reviewRatio: number;
+  const { selections, primaryNewTopicIds } = selectSequential(seq, masteryMap, {
+    floorIndex,
+    counts,
+    excludeIds: excludeNewTopicIds,
+  });
 
-  switch (pacing) {
-    case 'accelerating':
-      // Kid is doing great — allow more preview of future topics
-      currentRatio = 0.50;
-      reviewRatio = 0.15;
-      break;
-    case 'reinforcing':
-      // Kid is struggling — more review of previous, less preview
-      currentRatio = 0.50;
-      reviewRatio = 0.40;
-      break;
-    default:
-      // Steady — default allocation
-      currentRatio = 0.60;
-      reviewRatio = 0.25;
-  }
-
-  // Further adjust for test urgency
-  if (targetTestDate) {
-    const daysUntilTest = Math.max(1, (targetTestDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    const totalTopicCount = topics.length;
-    const masteredTopics = masteryRecords.filter((m) => m.mastery >= 70).length;
-    const remainingTopics = totalTopicCount - masteredTopics;
-    const topicsPerDay = remainingTopics / daysUntilTest;
-
-    if (topicsPerDay > 0.5) {
-      // Push more into current nine-weeks when test is approaching
-      const boost = Math.min(0.15, (topicsPerDay - 0.5) * 0.1);
-      currentRatio = Math.min(0.85, currentRatio + boost);
-      reviewRatio = Math.max(0.05, reviewRatio - boost / 2);
-    }
-  }
-
-  const currentCount = Math.ceil(totalQuestions * currentRatio);
-  const reviewCount = Math.ceil(totalQuestions * reviewRatio);
-  const previewCount = totalQuestions - currentCount - reviewCount;
-
-  const selections: TopicSelection[] = [];
-  const primaryNewTopicIds: string[] = [];
-
-  // ── 1. CURRENT nine-weeks topics ──────────────────────────────────
-  // New topics in current period that haven't been mastered
-  const currentNew = currentTopics
-    .filter((t) => {
-      if (excludeNewTopicIds?.has(t.id)) return false;
-      const m = masteryMap.get(t.id);
-      return !m || m.mastery < 70;
-    })
-    .sort((a, b) => a.order - b.order);
-
-  // Current period topics needing review (practiced but not mastered)
-  const currentReview = currentTopics
-    .filter((t) => {
-      const m = masteryMap.get(t.id);
-      return m && m.timesPracticed > 0 && m.mastery < 90;
-    })
-    .map((t) => {
-      const m = masteryMap.get(t.id)!;
-      const daysSince = m.lastPracticedAt
-        ? Math.max(1, (now.getTime() - m.lastPracticedAt.getTime()) / (1000 * 60 * 60 * 24))
-        : 30;
-      return { topic: t, priority: (100 - m.mastery) * daysSince };
-    })
-    .sort((a, b) => b.priority - a.priority);
-
-  // Fill current slots: new first, then review within current period
-  for (const topic of currentNew.slice(0, currentCount)) {
-    selections.push({
-      topic,
-      reason: 'current',
-      priority: 100 - (masteryMap.get(topic.id)?.mastery ?? 0),
-    });
-    primaryNewTopicIds.push(topic.id);
-  }
-
-  const currentNewFilled = Math.min(currentNew.length, currentCount);
-  const currentReviewSlots = currentCount - currentNewFilled;
-  for (const { topic, priority } of currentReview.slice(0, currentReviewSlots)) {
-    if (selections.some((s) => s.topic.id === topic.id)) continue;
-    selections.push({ topic, reason: 'review', priority });
-  }
-
-  // ── 2. PREVIOUS nine-weeks review ────────────────────────────────
-  // Only review topics from previous periods with mastery < 80%
-  const prevReviewCandidates = previousTopics
-    .filter((t) => {
-      const m = masteryMap.get(t.id);
-      return m && m.timesPracticed > 0 && m.mastery < 80;
-    })
-    .map((t) => {
-      const m = masteryMap.get(t.id)!;
-      const daysSince = m.lastPracticedAt
-        ? Math.max(1, (now.getTime() - m.lastPracticedAt.getTime()) / (1000 * 60 * 60 * 24))
-        : 30;
-      return { topic: t, priority: (100 - m.mastery) * daysSince };
-    })
-    .sort((a, b) => b.priority - a.priority)
-    .slice(0, reviewCount);
-
-  for (const { topic, priority } of prevReviewCandidates) {
-    selections.push({ topic, reason: 'review', priority });
-  }
-
-  // ── 3. PREVIEW / spillover ───────────────────────────────────────
-  // Future topics for advanced students, or fill if current is mastered
-  const existingIds = new Set(selections.map((s) => s.topic.id));
-
-  const previewCandidates = futureTopics
-    .filter((t) => {
-      if (excludeNewTopicIds?.has(t.id)) return false;
-      if (existingIds.has(t.id)) return false;
-      const m = masteryMap.get(t.id);
-      return !m || m.mastery < 70;
-    })
-    .sort((a, b) => a.order - b.order)
-    .slice(0, previewCount);
-
-  for (const topic of previewCandidates) {
-    selections.push({
-      topic,
-      reason: 'preview',
-      priority: 30,
-    });
-  }
-
-  // ── 4. Backfill if we don't have enough topics ───────────────────
-  if (selections.length < totalQuestions) {
-    const filledIds = new Set(selections.map((s) => s.topic.id));
-
-    // Try more current-period topics first (even mastered ones for reinforcement)
-    const currentExtras = currentTopics
-      .filter((t) => !filledIds.has(t.id))
-      .sort((a, b) => a.order - b.order);
-
-    for (const topic of currentExtras) {
-      if (selections.length >= totalQuestions) break;
-      selections.push({ topic, reason: 'current', priority: 40 });
-      filledIds.add(topic.id);
-    }
-
-    // Then previous-period topics with higher mastery threshold
-    const prevExtras = previousTopics
-      .filter((t) => !filledIds.has(t.id))
-      .sort((a, b) => a.order - b.order);
-
-    for (const topic of prevExtras) {
-      if (selections.length >= totalQuestions) break;
-      selections.push({ topic, reason: 'review', priority: 20 });
-      filledIds.add(topic.id);
-    }
-
-    // Finally future topics
-    const futureExtras = futureTopics
-      .filter((t) => !filledIds.has(t.id))
-      .sort((a, b) => a.order - b.order);
-
-    for (const topic of futureExtras) {
-      if (selections.length >= totalQuestions) break;
-      selections.push({ topic, reason: 'preview', priority: 10 });
-    }
-  }
-
-  return {
-    selections: selections.slice(0, totalQuestions),
-    pacing,
-    primaryNewTopicIds,
-  };
+  return { selections, pacing, primaryNewTopicIds };
 }
 
 /**

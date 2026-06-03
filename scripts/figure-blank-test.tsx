@@ -27,6 +27,12 @@ const cases: Case[] = [
   { label: 'inequality on number line', expectBlank: true,
     q: 'Solve 2x - 3 >= 9 and graph the solution on the number line.',
     figure: { kind: 'number-line', min: -2, max: 12, majorTick: 2, intervals: [{ from: 6, to: 12, fromStyle: 'closed', toStyle: 'open' }] } },
+  { label: 'between which integers (no draw verb)', expectBlank: true,
+    q: 'Between which two consecutive integers does sqrt(47) lie?',
+    figure: { kind: 'number-line', min: 5, max: 9, majorTick: 1, markedPoints: [{ value: 6, style: 'open' }, { value: 7, style: 'open' }] } },
+  { label: 'number line value SHOWN (kept)', expectBlank: false,
+    q: 'What value is shown by the point on the number line?',
+    figure: { kind: 'number-line', min: 0, max: 10, majorTick: 1, markedPoints: [{ value: 4, style: 'closed' }] } },
 ];
 
 let ok = true;
