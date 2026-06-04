@@ -13,8 +13,7 @@
 
 import { CurriculumTopic, TopicSelection } from './types';
 
-const MASTERED = 80;     // mastery >= this → frontier advances past it
-const REVIEW_CEIL = 90;  // practiced topics below this are review candidates
+const MASTERED = 80;     // mastery >= this → frontier advances past it (and is "maintenance" review material)
 
 export interface SeqMastery {
   mastery: number;
@@ -120,19 +119,43 @@ export function selectSequential(
     usedIds.add(t.id);
   }
 
-  // REVIEW — practiced-but-weak topics (incl. earlier-grade gaps), weighted by
-  // how weak + how long since last practice.
-  const review = seq
-    .filter((t) => isPracticed(t) && !usedIds.has(t.id) && (mastery.get(t.id)!.mastery < REVIEW_CEIL))
-    .map((t) => {
-      const m = mastery.get(t.id)!;
-      const days = m.lastPracticedAt
-        ? Math.max(1, (now.getTime() - new Date(m.lastPracticedAt).getTime()) / 86_400_000)
-        : 30;
-      return { topic: t, priority: (100 - m.mastery) * days };
-    })
-    .sort((a, b) => b.priority - a.priority)
-    .slice(0, counts.numReview);
+  // REVIEW — two flavors:
+  //   • remediation: practiced-but-WEAK topics (incl. earlier-grade gaps),
+  //     weighted by how weak + how long since practice → comes back EASIER.
+  //   • maintenance: a MASTERED topic that hasn't been seen in a while, for
+  //     spaced retention → comes back HARDER (per the difficulty directive).
+  // Reserve one slot for maintenance when there are >=2 review slots.
+  const daysSince = (id: string) => {
+    const m = mastery.get(id)!;
+    return m.lastPracticedAt
+      ? Math.max(1, (now.getTime() - new Date(m.lastPracticedAt).getTime()) / 86_400_000)
+      : 30;
+  };
+  const candidates = seq.filter((t) => isPracticed(t) && !usedIds.has(t.id));
+  const weak = candidates
+    .filter((t) => mastery.get(t.id)!.mastery < MASTERED)
+    .map((t) => ({ topic: t, priority: (100 - mastery.get(t.id)!.mastery) * daysSince(t.id) }))
+    .sort((a, b) => b.priority - a.priority);
+  const strong = candidates
+    .filter((t) => mastery.get(t.id)!.mastery >= MASTERED)
+    .map((t) => ({ topic: t, priority: daysSince(t.id) }))
+    .sort((a, b) => b.priority - a.priority);
+
+  const wantMaintenance = counts.numReview >= 2 && strong.length > 0 ? 1 : 0;
+  const review: { topic: typeof seq[number]; priority: number }[] = [];
+  for (const r of weak) {
+    if (review.length >= counts.numReview - wantMaintenance) break;
+    review.push(r);
+  }
+  for (const r of strong) {
+    if (review.length >= counts.numReview) break;
+    review.push(r);
+  }
+  // Backfill any unused slots from whichever pool still has topics.
+  for (const r of [...weak, ...strong]) {
+    if (review.length >= counts.numReview) break;
+    if (!review.some((x) => x.topic.id === r.topic.id)) review.push(r);
+  }
 
   // Fallback: curriculum finished (no current topics) → reinforce the last few.
   if (current.length === 0 && review.length === 0 && seq.length > 0) {
@@ -142,13 +165,18 @@ export function selectSequential(
 
   const selections: TopicSelection[] = [];
   for (const topic of current) {
-    selections.push({ topic, reason: 'current', priority: 100 - (mastery.get(topic.id)?.mastery ?? 0) });
+    selections.push({
+      topic,
+      reason: 'current',
+      priority: 100 - (mastery.get(topic.id)?.mastery ?? 0),
+      mastery: mastery.get(topic.id)?.mastery,
+    });
   }
   for (const { topic, priority } of review) {
-    selections.push({ topic, reason: 'review', priority });
+    selections.push({ topic, reason: 'review', priority, mastery: mastery.get(topic.id)?.mastery });
   }
   for (const topic of preview) {
-    selections.push({ topic, reason: 'preview', priority: 30 });
+    selections.push({ topic, reason: 'preview', priority: 30, mastery: mastery.get(topic.id)?.mastery });
   }
 
   return { selections, primaryNewTopicIds: current.map((t) => t.id) };

@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${childName}_week_worksheets.pdf"`,
+        'Content-Disposition': `attachment; filename="${childName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}_week.pdf"`,
       },
     });
   } catch (error) {

@@ -44,10 +44,15 @@ export async function GET(
       data: { status: 'printed' },
     });
 
+    const datePart = (worksheet.createdAt ?? new Date()).toISOString().slice(0, 10);
+    const safeName = worksheet.child.name.replace(/[^a-zA-Z0-9]/g, '_');
+    const safeTitle = worksheet.title.replace(/[^a-zA-Z0-9]/g, '_');
+    const filename = `${safeName}_${datePart}_${safeTitle}.pdf`;
+
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${worksheet.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {

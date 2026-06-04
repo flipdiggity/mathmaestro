@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       childId,
-      questionCount = 30,
+      questionCount = 25,
       selectedTopicIds,
       days,
     }: {

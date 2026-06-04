@@ -90,7 +90,7 @@ function GeneratePageInner() {
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [topicMode, setTopicMode] = useState<'auto' | 'manual' | 'pdf'>('auto');
   const [selectedTopicIds, setSelectedTopicIds] = useState<Set<string>>(new Set());
-  const [questionCount, setQuestionCount] = useState(30);
+  const [questionCount, setQuestionCount] = useState(25);
   const [expandedStrands, setExpandedStrands] = useState<Set<string>>(new Set());
 
   // ---- State: multi-day ----

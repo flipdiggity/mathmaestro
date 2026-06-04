@@ -35,4 +35,6 @@ export interface TopicSelection {
   topic: CurriculumTopic;
   reason: 'new' | 'review' | 'current' | 'preview';
   priority: number;
+  /** Student's current mastery 0-100 for this topic (undefined = never practiced). Drives difficulty. */
+  mastery?: number;
 }

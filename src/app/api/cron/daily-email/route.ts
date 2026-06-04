@@ -69,7 +69,7 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
       };
 
       const result = await generateAdaptiveWorksheet(gen, {
-        questionCount: 30,
+        questionCount: 25,
         biasTopicIds: missedTopicIds,
         dayOfWeek,
       });
@@ -82,8 +82,9 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
         result.topicReviews
       );
 
+      const datePart = today.toISOString().slice(0, 10);
       attachments.push({
-        filename: `${child.name}_${dayOfWeek}.pdf`,
+        filename: `${child.name.replace(/[^a-zA-Z0-9]/g, '_')}_${datePart}_${dayOfWeek}.pdf`,
         content: Buffer.from(pdf).toString('base64'),
       });
 

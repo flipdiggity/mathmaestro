@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireUser();
     const body = await request.json();
-    const { childId, questionCount = 30, selectedTopicIds } = body;
+    const { childId, questionCount = 25, selectedTopicIds } = body;
 
     // Verify ownership
     const child = await verifyChildOwnership(childId, user.id);

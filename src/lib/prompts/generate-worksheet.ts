@@ -6,6 +6,18 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+// Per-topic difficulty target based on the student's current mastery. The same
+// skill gets HARDER once they've shown mastery (extension/multi-step) and EASIER
+// when they're weak (scaffolded), so they move through quickly on strengths and
+// get support on gaps.
+function difficultyDirective(s: TopicSelection): string {
+  const m = s.mastery;
+  if (m == null) return 'TARGET: new topic — start accessible (difficulty 1-2) and build understanding';
+  if (m >= 85) return `TARGET: MASTERED (~${Math.round(m)}%) — make these CHALLENGING (difficulty 3): multi-step, larger/uglier numbers, or an extension/application of the same skill`;
+  if (m >= 60) return `TARGET: developing (~${Math.round(m)}%) — mostly difficulty 2 with one stretch problem`;
+  return `TARGET: needs work (~${Math.round(m)}%) — keep difficulty 1-2, scaffolded and confidence-building`;
+}
+
 export function buildGeneratePrompt(
   childName: string,
   gradeLevel: number,
@@ -33,7 +45,7 @@ export function buildGeneratePrompt(
       ? `\n   FIGURE REQUIRED: At least one problem for this topic must include a "figure" payload for ${FIGURE_KIND_HINTS[kind] ?? `figure.kind "${kind}"`}. Put the diagram in the figure field, never in the question text.`
       : '';
     return `${i + 1}. [${tag}] ${s.topic.name} (${s.topic.tpiCode}) - ${s.topic.description}
-   Difficulty: ${s.topic.difficulty}/3 | Sample problems: ${s.topic.sampleProblems.join('; ')}${imageNote}`;
+   Difficulty: ${s.topic.difficulty}/3 | ${difficultyDirective(s)} | Sample problems: ${s.topic.sampleProblems.join('; ')}${imageNote}`;
   }
 
   const topicDescriptions = selections.map(describeTopic).join('\n');
@@ -56,8 +68,9 @@ export function buildGeneratePrompt(
 Current period: ${nwLabel} (${formatDate(start)} – ${formatDate(end)})
 Primary focus topics for this period are marked [CURRENT].
 Generate more questions for [CURRENT] topics than [REVIEW] or [PREVIEW] topics.
-[REVIEW] topics are from earlier grading periods — keep those problems shorter and simpler.
 [PREVIEW] topics are upcoming material — keep those problems introductory.
+
+Each topic has a TARGET difficulty based on how well ${childName} has already mastered it — FOLLOW IT. Topics they've mastered should get harder, more complex problems (same skill, pushed further); topics they're weak on should get easier, scaffolded problems. Set each question's "difficulty" field (1, 2, or 3) to match its topic's target.
 
 CRITICAL RULES:
 - Generate exactly ${totalQuestions} problems

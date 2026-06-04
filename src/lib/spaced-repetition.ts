@@ -59,7 +59,7 @@ export async function getPacingRecommendation(childId: string): Promise<Pacing> 
 export async function selectTopics(
   childId: string,
   topics: CurriculumTopic[],
-  totalQuestions: number = 30,
+  totalQuestions: number = 25,
   _targetTestDate?: Date | null,
   excludeNewTopicIds?: Set<string>
 ): Promise<SelectTopicsResult> {

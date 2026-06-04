@@ -6,7 +6,7 @@
 import { prisma } from './db';
 import { generateText } from './anthropic';
 import { selectTopics } from './spaced-repetition';
-import { getTopicsForChild, getTopicById } from './curriculum';
+import { getTopicsForChild } from './curriculum';
 import { buildGeneratePrompt } from './prompts/generate-worksheet';
 import { verifyWorksheetAnswers } from './answer-verifier';
 import { sanitizeStudentDrawFigure } from './student-figure';
@@ -41,7 +41,7 @@ export async function generateAdaptiveWorksheet(
   child: GenerationChild,
   opts: { questionCount?: number; biasTopicIds?: string[]; dayOfWeek?: string } = {}
 ): Promise<GeneratedWorksheetResult> {
-  const questionCount = opts.questionCount ?? 30;
+  const questionCount = opts.questionCount ?? 25;
   const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
 
   const { selections } = await selectTopics(
@@ -53,16 +53,13 @@ export async function generateAdaptiveWorksheet(
 
   // Force-include yesterday's missed topics as extra review practice.
   const selectionList: TopicSelection[] = [...selections];
-  const present = new Set(selectionList.map((s) => s.topic.id));
-  for (const id of opts.biasTopicIds ?? []) {
-    if (!present.has(id)) {
-      const topic = getTopicById(id);
-      if (topic) {
-        selectionList.push({ topic, reason: 'review', priority: 90 });
-        present.add(id);
-      }
-    }
-  }
+  // NOTE: we intentionally do NOT force-inject every missed topic here. The
+  // sequential selection already re-surfaces missed topics as review (a miss
+  // lowers their mastery, which raises their review priority), so force-adding
+  // them would re-scatter the worksheet across the whole curriculum — exactly
+  // the "all over the place" problem. `biasTopicIds` is accepted for back-compat
+  // but no longer alters selection.
+  void opts.biasTopicIds;
 
   if (selectionList.length === 0) {
     throw new Error(`No topics available for ${child.name}`);
