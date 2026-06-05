@@ -95,7 +95,12 @@ ${topicDescriptions}
 
 Distribute questions across the topics, giving more weight to [CURRENT] topics (the primary focus for this grading period). For [REVIEW] topics, make problems slightly easier to rebuild confidence. For [CURRENT] topics, start accessible and increase difficulty. For [PREVIEW] topics, keep problems introductory and approachable.
 
-IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific values, word problem scenarios, and phrasings so that no two worksheets are alike, even for the same topics. Do NOT start with the same type of question each time — vary the order of topic types across worksheets.${previousQuestions && previousQuestions.length > 0 ? `
+IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific values, word problem scenarios, and phrasings so that no two worksheets are alike, even for the same topics. Do NOT start with the same type of question each time — vary the order of topic types across worksheets.
+
+ANSWER & STRUCTURE VARIETY (important — recent worksheets were too repetitive):
+- Do NOT let answers cluster. Spread the numeric ANSWERS across a wide range — never give several problems the same answer value (e.g. do not make many lines have slope 3, or many problems answer to 12). Before finalizing, scan your answers and re-work any that repeat.
+- Vary the STRUCTURE of problems within a topic, not just the numbers. Mix forms: from a table, from a graph, from two points, from a verbal description, working forwards vs backwards, find-the-missing-piece, real-world vs abstract. Two problems on the same skill should look and feel different, not be the same template with swapped numbers.
+- Use a varied mix of number types where appropriate: positives and negatives, whole numbers, fractions, and decimals; small and larger magnitudes.${previousQuestions && previousQuestions.length > 0 ? `
 
 DO NOT REPEAT these questions from previous days (use completely different numbers, contexts, and phrasings):
 ${previousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : ''}

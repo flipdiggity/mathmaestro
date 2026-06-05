@@ -31,6 +31,7 @@ const navLinks = [
   { href: "/", label: "Today" },
   { href: "/generate", label: "Generate" },
   { href: "/grade", label: "Grade" },
+  { href: "/plan", label: "Plan" },
   { href: "/worksheets", label: "History" },
 ];
 
