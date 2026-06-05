@@ -61,21 +61,21 @@ const NAMED_PROBES: Record<string, DiagnosticProbe> = {
     questionsPerTopic: 3,
   },
 
-  // Mylo is entering 4th. This probe checks the 3rd-grade foundations 4th grade
-  // builds on, so we know whether Week 1 starts with foundation review or jumps
-  // straight into 4.2 place value.
+  // Mylo is entering 4th. Probe the EARLY 4th-grade number-sense topics (the
+  // ones he may already know), so a strong score marks them mastered and the
+  // sequential generator skips him ahead to fractions/decimals. These topics are
+  // in his actual worksheet pool, so grading the diagnostic actually moves him.
   mylo: {
-    label: '3rd-Grade Foundations Probe',
+    label: '4th-Grade Placement Probe',
     description:
-      'Multi-digit add/subtract fluency, multiplication & division facts, and fraction concepts from 3rd grade.',
+      'Place value, comparing/ordering, rounding, multi-digit operations — the early 4th-grade number sense.',
     topicIds: [
-      '3.nbt.3',  // Addition with Regrouping
-      '3.nbt.4',  // Subtraction with Regrouping
-      '3.nbt.5',  // Multiplication Facts (0-10)
-      '3.nbt.6',  // Division Facts
-      '3.frac.1', // Fractions on a Number Line
-      '3.frac.2', // Comparing Fractions
-      '3.frac.3', // Equivalent Fractions with Models
+      '4.nbt.1', // Place Value
+      '4.nbt.2', // Comparing & Ordering Large Numbers
+      '4.nbt.3', // Rounding Whole Numbers
+      '4.nbt.4', // Addition & Subtraction to 1,000,000
+      '4.nbt.5', // Multiply up to 4-Digit by 1-Digit
+      '4.nbt.7', // Divide up to 4-Digit by 1-Digit
     ],
     questionsPerTopic: 3,
   },

@@ -17,6 +17,7 @@ export async function GET() {
         topicMastery: {
           orderBy: { mastery: 'asc' },
         },
+        _count: { select: { worksheets: true, topicMastery: true } },
       },
     });
 

@@ -14,6 +14,7 @@ interface Child {
   state: string;
   district: string;
   targetTestDate: string | null;
+  _count?: { worksheets: number; topicMastery: number };
 }
 
 const AVAILABLE_STATES = [{ code: 'TX', name: 'Texas' }];
@@ -258,34 +259,48 @@ export default function ManageChildrenPage() {
         )}
 
         <div className="space-y-3">
-          {children.map((child) => (
-            <Card key={child.id}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div className="space-y-1">
-                  <p className="font-medium text-slate-900">{child.name}</p>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      Grade {child.grade}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {child.track.charAt(0).toUpperCase() + child.track.slice(1)}
-                    </Badge>
-                    <span className="text-xs text-slate-400">
-                      {child.district === 'eanes-isd' ? 'Eanes ISD' : child.district} &middot; {child.state}
-                    </span>
+          {children.map((child) => {
+            const isDup =
+              children.filter((c) => c.name.trim().toLowerCase() === child.name.trim().toLowerCase()).length > 1;
+            return (
+              <Card key={child.id} className={isDup ? 'border-amber-300' : ''}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div className="space-y-1">
+                    <p className="font-medium text-slate-900">{child.name}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        Grade {child.grade}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {child.track.charAt(0).toUpperCase() + child.track.slice(1)}
+                      </Badge>
+                      <span className="text-xs text-slate-400">
+                        {child.district === 'eanes-isd' ? 'Eanes ISD' : child.district} &middot; {child.state}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      {child._count?.worksheets ?? 0} worksheet{(child._count?.worksheets ?? 0) === 1 ? '' : 's'} ·{' '}
+                      {child._count?.topicMastery ?? 0} topics tracked
+                    </p>
+                    {isDup && (
+                      <p className="text-xs text-amber-600">
+                        ⚠ Duplicate name. Keep the record with the most topics tracked / worksheets and delete the other —
+                        the daily email uses one record, so duplicates cause mismatched worksheets.
+                      </p>
+                    )}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => startEdit(child)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(child.id)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => startEdit(child)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(child.id)}>
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </main>
     </div>

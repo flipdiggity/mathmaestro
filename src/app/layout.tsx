@@ -33,6 +33,7 @@ const navLinks = [
   { href: "/grade", label: "Grade" },
   { href: "/plan", label: "Plan" },
   { href: "/worksheets", label: "History" },
+  { href: "/children", label: "Children" },
 ];
 
 export default function RootLayout({
