@@ -23,6 +23,9 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
   // we don't email two sets per kid.
   const byName = new Map<string, (typeof allChildren)[number]>();
   for (const c of allChildren) {
+    // Skip children with the daily email turned off. (Cast tolerates a stale
+    // local Prisma client; the field exists after `prisma generate` on deploy.)
+    if ((c as { emailEnabled?: boolean }).emailEnabled === false) continue;
     const key = c.name.trim().toLowerCase();
     const existing = byName.get(key);
     if (!existing || c._count.worksheets > existing._count.worksheets) {

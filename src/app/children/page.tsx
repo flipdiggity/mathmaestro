@@ -14,6 +14,7 @@ interface Child {
   state: string;
   district: string;
   targetTestDate: string | null;
+  emailEnabled?: boolean;
   _count?: { worksheets: number; topicMastery: number };
 }
 
@@ -111,6 +112,16 @@ export default function ManageChildrenPage() {
     if (!confirm('Are you sure you want to remove this child? This cannot be undone.')) return;
     await fetch(`/api/children/${id}`, { method: 'DELETE' });
     fetchChildren();
+  }
+
+  async function toggleEmail(child: Child) {
+    const next = !(child.emailEnabled ?? true);
+    setChildren((cs) => cs.map((c) => (c.id === child.id ? { ...c, emailEnabled: next } : c)));
+    await fetch(`/api/children/${child.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emailEnabled: next }),
+    });
   }
 
   if (loading) {
@@ -290,6 +301,18 @@ export default function ManageChildrenPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleEmail(child)}
+                      className={`text-xs font-medium rounded-full px-2.5 py-1 border transition-colors ${
+                        (child.emailEnabled ?? true)
+                          ? 'border-green-300 text-green-700 bg-green-50'
+                          : 'border-slate-300 text-slate-500 bg-slate-50'
+                      }`}
+                      title="Toggle the daily worksheet email for this child"
+                    >
+                      Daily email: {(child.emailEnabled ?? true) ? 'On' : 'Off'}
+                    </button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(child)}>
                       <Pencil className="h-4 w-4" />
                     </Button>

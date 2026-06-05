@@ -15,7 +15,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, grade, track, state, district, targetTestDate } = body;
+    const { name, grade, track, state, district, targetTestDate, emailEnabled } = body;
 
     const updated = await prisma.child.update({
       where: { id: params.id },
@@ -25,6 +25,7 @@ export async function PUT(
         ...(track !== undefined && { track }),
         ...(state !== undefined && { state }),
         ...(district !== undefined && { district }),
+        ...(typeof emailEnabled === 'boolean' && { emailEnabled }),
         targetTestDate: targetTestDate ? new Date(targetTestDate) : null,
       },
     });

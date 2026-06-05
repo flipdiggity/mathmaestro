@@ -24,22 +24,19 @@ interface TopicRow {
   order: number;
   mastery: number | null;
   known: boolean;
+  correct: number;
+  total: number;
+  upNext: boolean;
 }
 interface Period {
-  nineWeeks: number;
+  semester: number;
+  label: string;
   topics: TopicRow[];
 }
 interface GradeBlock {
   grade: number;
   periods: Period[];
 }
-
-const NW_LABEL: Record<number, string> = {
-  1: '1st Nine Weeks',
-  2: '2nd Nine Weeks',
-  3: '3rd Nine Weeks',
-  4: '4th Nine Weeks',
-};
 
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -158,37 +155,51 @@ export default function PlanPage() {
               </CardHeader>
               <CardContent className="space-y-5">
                 {g.periods.map((p) => (
-                  <div key={p.nineWeeks}>
+                  <div key={p.semester}>
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                      {NW_LABEL[p.nineWeeks] ?? `Period ${p.nineWeeks}`}
+                      {p.label}
                     </p>
                     <div className="space-y-1">
-                      {p.topics.map((t) => (
-                        <label
-                          key={t.id}
-                          className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={t.known}
-                            disabled={saving.has(t.id)}
-                            onChange={(e) => toggle(t.id, e.target.checked)}
-                            className="h-4 w-4 rounded border-input accent-primary"
-                          />
-                          <span className={`flex-1 ${t.known ? 'text-muted-foreground line-through' : ''}`}>
-                            {t.name}
-                          </span>
-                          {t.known ? (
-                            <Badge variant="secondary" className="text-[10px]">
-                              skip
-                            </Badge>
-                          ) : t.mastery != null ? (
-                            <Badge variant="outline" className="text-[10px]">
-                              {Math.round(t.mastery)}%
-                            </Badge>
-                          ) : null}
-                        </label>
-                      ))}
+                      {p.topics.map((t) => {
+                        const pct = t.total > 0 ? Math.round((t.correct / t.total) * 100) : null;
+                        const scoreColor =
+                          pct == null ? '' : pct >= 80 ? 'text-green-600 border-green-300'
+                            : pct >= 60 ? 'text-amber-600 border-amber-300' : 'text-red-600 border-red-300';
+                        return (
+                          <label
+                            key={t.id}
+                            className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50 cursor-pointer transition-colors ${t.upNext ? 'bg-indigo-50 ring-1 ring-indigo-200' : ''}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={t.known}
+                              disabled={saving.has(t.id)}
+                              onChange={(e) => toggle(t.id, e.target.checked)}
+                              className="h-4 w-4 rounded border-input accent-primary"
+                            />
+                            <span className={`flex-1 ${t.known ? 'text-muted-foreground line-through' : ''}`}>
+                              {t.name}
+                            </span>
+                            {t.upNext && (
+                              <Badge className="text-[10px] bg-indigo-600">Up next</Badge>
+                            )}
+                            {/* Real score from graded homework */}
+                            {pct != null && (
+                              <Badge variant="outline" className={`text-[10px] ${scoreColor}`}>
+                                {t.correct}/{t.total} · {pct}%
+                              </Badge>
+                            )}
+                            {t.known && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                skip
+                              </Badge>
+                            )}
+                            {pct == null && !t.known && (
+                              <span className="text-[10px] text-muted-foreground">not yet</span>
+                            )}
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

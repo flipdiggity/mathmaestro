@@ -27,6 +27,7 @@ model Child {
   state          String         @default("TX")
   district       String         @default("eanes-isd")
   targetTestDate DateTime?
+  emailEnabled   Boolean        @default(true)
   createdAt      DateTime       @default(now())
   userId         String
   user           User           @relation(fields: [userId], references: [id])
