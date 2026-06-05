@@ -9,6 +9,7 @@ import { getTopicsForChild } from '@/lib/curriculum';
 import { buildGeneratePrompt } from '@/lib/prompts/generate-worksheet';
 import { verifyWorksheetAnswers } from '@/lib/answer-verifier';
 import { sanitizeStudentDrawFigure } from '@/lib/student-figure';
+import { getRecentQuestionTexts } from '@/lib/worksheet-generation';
 import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -60,11 +61,13 @@ export async function POST(request: NextRequest) {
       topicReasonMap.set(s.topic.id, s.reason === 'review' ? 'review' : 'new');
     }
 
+    const previousQuestions = await getRecentQuestionTexts(child.id);
     const { system, prompt } = buildGeneratePrompt(
       child.name,
       child.grade,
       selections,
-      questionCount
+      questionCount,
+      previousQuestions
     );
 
     const responseText = await generateText(prompt, {

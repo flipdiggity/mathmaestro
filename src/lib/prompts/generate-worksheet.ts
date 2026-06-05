@@ -45,7 +45,7 @@ export function buildGeneratePrompt(
       ? `\n   FIGURE REQUIRED: At least one problem for this topic must include a "figure" payload for ${FIGURE_KIND_HINTS[kind] ?? `figure.kind "${kind}"`}. Put the diagram in the figure field, never in the question text.`
       : '';
     return `${i + 1}. [${tag}] ${s.topic.name} (${s.topic.tpiCode}) - ${s.topic.description}
-   Difficulty: ${s.topic.difficulty}/3 | ${difficultyDirective(s)} | Sample problems: ${s.topic.sampleProblems.join('; ')}${imageNote}`;
+   Difficulty: ${s.topic.difficulty}/3 | ${difficultyDirective(s)} | Examples (illustrate the SKILL ONLY — invent fresh numbers/contexts, do NOT copy these): ${s.topic.sampleProblems.join('; ')}${imageNote}`;
   }
 
   const topicDescriptions = selections.map(describeTopic).join('\n');
@@ -100,7 +100,8 @@ IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific 
 ANSWER & STRUCTURE VARIETY (important — recent worksheets were too repetitive):
 - Do NOT let answers cluster. Spread the numeric ANSWERS across a wide range — never give several problems the same answer value (e.g. do not make many lines have slope 3, or many problems answer to 12). Before finalizing, scan your answers and re-work any that repeat.
 - Vary the STRUCTURE of problems within a topic, not just the numbers. Mix forms: from a table, from a graph, from two points, from a verbal description, working forwards vs backwards, find-the-missing-piece, real-world vs abstract. Two problems on the same skill should look and feel different, not be the same template with swapped numbers.
-- Use a varied mix of number types where appropriate: positives and negatives, whole numbers, fractions, and decimals; small and larger magnitudes.${previousQuestions && previousQuestions.length > 0 ? `
+- Use a varied mix of number types where appropriate: positives and negatives, whole numbers, fractions, and decimals; small and larger magnitudes.
+- Do NOT reuse the example problems above verbatim — they only show the skill. Invent your own numbers, functions, and scenarios. In particular, vary the FIRST problem every time (e.g. don't always open a "complete the table for y = ..." item with the same equation or x-values).${previousQuestions && previousQuestions.length > 0 ? `
 
 DO NOT REPEAT these questions from previous days (use completely different numbers, contexts, and phrasings):
 ${previousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : ''}

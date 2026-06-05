@@ -37,6 +37,29 @@ export interface GeneratedWorksheetResult {
  * (so skills the child has missed bubble up automatically); `biasTopicIds` force-
  * includes specific topics — e.g. yesterday's missed topics — as extra review.
  */
+/**
+ * The question texts from a child's most recent worksheets, so the generator can
+ * avoid repeating them day to day. Capped so the prompt doesn't balloon.
+ */
+export async function getRecentQuestionTexts(childId: string, maxQuestions = 45): Promise<string[]> {
+  const recent = await prisma.worksheet.findMany({
+    where: { childId },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: { questionsJson: true },
+  });
+  const texts: string[] = [];
+  for (const w of recent) {
+    try {
+      const qs = JSON.parse(w.questionsJson) as Array<{ question?: string }>;
+      for (const q of qs) if (q.question) texts.push(q.question);
+    } catch {
+      // skip unparseable
+    }
+  }
+  return texts.slice(0, maxQuestions);
+}
+
 export async function generateAdaptiveWorksheet(
   child: GenerationChild,
   opts: { questionCount?: number; biasTopicIds?: string[]; dayOfWeek?: string } = {}
@@ -70,7 +93,17 @@ export async function generateAdaptiveWorksheet(
     topicReasonMap.set(s.topic.id, s.reason === 'review' ? 'review' : 'new');
   }
 
-  const { system, prompt } = buildGeneratePrompt(child.name, child.grade, selectionList, questionCount);
+  // Cross-day variety: tell the model what it already gave this child recently so
+  // it doesn't keep re-emitting the same canonical problem (e.g. y = 3x - 5).
+  const previousQuestions = await getRecentQuestionTexts(child.id);
+
+  const { system, prompt } = buildGeneratePrompt(
+    child.name,
+    child.grade,
+    selectionList,
+    questionCount,
+    previousQuestions
+  );
   const responseText = await generateText(prompt, { system, temperature: 0.7, maxTokens: 8192 });
 
   let cleaned = responseText.trim();
