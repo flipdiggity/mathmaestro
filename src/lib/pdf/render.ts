@@ -4,8 +4,10 @@ import { WorksheetPDF, BatchWorksheetPDF } from './worksheet-template';
 import { Question } from '@/types';
 import { BookRef } from '@/lib/curriculum/types';
 
-// Topic + book-chapter references rendered in the "Before you start" review block.
+// Topic + book-chapter references shown under each question. Matched to questions
+// by topicId (reliable) with topicName as a fallback.
 export interface TopicReviewRef {
+  topicId?: string;
   topicName: string;
   bookRefs?: BookRef[];
 }

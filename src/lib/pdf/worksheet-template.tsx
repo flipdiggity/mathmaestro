@@ -1247,6 +1247,7 @@ function renderLegacyGrid(q: Question) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface TopicReviewRef {
+  topicId?: string;
   topicName: string;
   bookRefs?: BookRef[];
 }
@@ -1291,7 +1292,9 @@ function formatBookRefs(refs?: BookRef[]): string {
 }
 
 function renderQuestion(q: Question, refsByTopic?: Map<string, BookRef[] | undefined>) {
-  const refLine = formatBookRefs(refsByTopic?.get(q.topicName));
+  // Match by topicId first (reliable), then topicName as a fallback.
+  const refs = refsByTopic?.get(q.topicId) ?? refsByTopic?.get(q.topicName);
+  const refLine = formatBookRefs(refs);
   return (
     <View key={q.number} style={styles.questionBlock} wrap={false}>
       <Text>
@@ -1320,10 +1323,13 @@ function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
   const newQuestions = hasSections ? questions.filter((q) => q.section === 'new') : [];
   const reviewQuestions = hasSections ? questions.filter((q) => q.section === 'review') : [];
 
-  // Look up each question's book chapters by topic name, shown under the question.
-  const refsByTopic = new Map<string, BookRef[] | undefined>(
-    (topicReviews ?? []).map((t) => [t.topicName, t.bookRefs])
-  );
+  // Look up each question's book chapters, keyed by BOTH topicId and topicName
+  // so renderQuestion can match on id (reliable) or fall back to name.
+  const refsByTopic = new Map<string, BookRef[] | undefined>();
+  for (const t of topicReviews ?? []) {
+    if (t.topicId) refsByTopic.set(t.topicId, t.bookRefs);
+    refsByTopic.set(t.topicName, t.bookRefs);
+  }
 
   return (
     <Page size="LETTER" style={styles.page}>

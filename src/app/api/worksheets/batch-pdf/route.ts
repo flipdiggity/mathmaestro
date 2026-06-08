@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         topicReviews = topicIds
           .map((id) => getTopicById(id))
           .filter((t): t is NonNullable<typeof t> => Boolean(t))
-          .map((t) => ({ topicName: t.name, bookRefs: t.bookRefs }));
+          .map((t) => ({ topicId: t.id, topicName: t.name, bookRefs: t.bookRefs }));
       } catch {
         // No/invalid topicIdsJson — render without the review block.
       }

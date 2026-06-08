@@ -154,6 +154,7 @@ export async function generateAdaptiveWorksheet(
   });
 
   const topicReviews: TopicReviewRef[] = selectionList.map((s) => ({
+    topicId: s.topic.id,
     topicName: s.topic.name,
     bookRefs: s.topic.bookRefs,
   }));
