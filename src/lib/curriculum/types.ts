@@ -37,4 +37,6 @@ export interface TopicSelection {
   priority: number;
   /** Student's current mastery 0-100 for this topic (undefined = never practiced). Drives difficulty. */
   mastery?: number;
+  /** True if this is spaced-review of an already-mastered topic (capped to a small share of the sheet). */
+  maintenance?: boolean;
 }

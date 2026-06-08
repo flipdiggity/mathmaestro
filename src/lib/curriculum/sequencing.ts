@@ -122,8 +122,10 @@ export function selectSequential(
   // REVIEW — two flavors:
   //   • remediation: practiced-but-WEAK topics (incl. earlier-grade gaps),
   //     weighted by how weak + how long since practice → comes back EASIER.
-  //   • maintenance: a MASTERED topic that hasn't been seen in a while, for
-  //     spaced retention → comes back HARDER (per the difficulty directive).
+  //   • maintenance: a GRADED-MASTERED topic that hasn't been seen in a while,
+  //     for spaced retention → comes back HARDER (per the difficulty directive).
+  //     Topics the parent manually marked "known/skip" (timesPracticed === 0)
+  //     are NEVER resurfaced — "skip" means gone.
   // Reserve one slot for maintenance when there are >=2 review slots.
   const daysSince = (id: string) => {
     const m = mastery.get(id)!;
@@ -131,18 +133,29 @@ export function selectSequential(
       ? Math.max(1, (now.getTime() - new Date(m.lastPracticedAt).getTime()) / 86_400_000)
       : 30;
   };
+  // Expanding spaced-review interval: each correct review pushes the next one
+  // further out, so a topic seen right repeatedly is shown less and less.
+  const maintInterval = (tp: number) => Math.min(30, 2 ** Math.max(0, tp - 1)); // 1d,2d,4d,8d,16d,30d
   const candidates = seq.filter((t) => isPracticed(t) && !usedIds.has(t.id));
   const weak = candidates
     .filter((t) => mastery.get(t.id)!.mastery < MASTERED)
-    .map((t) => ({ topic: t, priority: (100 - mastery.get(t.id)!.mastery) * daysSince(t.id) }))
+    .map((t) => ({ topic: t, priority: (100 - mastery.get(t.id)!.mastery) * daysSince(t.id), maintenance: false }))
     .sort((a, b) => b.priority - a.priority);
   const strong = candidates
-    .filter((t) => mastery.get(t.id)!.mastery >= MASTERED)
-    .map((t) => ({ topic: t, priority: daysSince(t.id) }))
+    .filter((t) => {
+      const m = mastery.get(t.id)!;
+      const tp = m.timesPracticed ?? 0;
+      if (m.mastery < MASTERED || tp <= 0) return false; // unmastered or manually-skipped → never here
+      if (m.mastery >= 95 && tp >= 4) return false; // rock solid → stop showing it altogether
+      return daysSince(t.id) >= maintInterval(tp); // only when the spaced interval has elapsed
+    })
+    .map((t) => ({ topic: t, priority: daysSince(t.id), maintenance: true }))
     .sort((a, b) => b.priority - a.priority);
 
+  // At most ONE maintenance (mastered) topic per sheet, so spaced review stays a
+  // small slice; the generation prompt further caps it to <=10% of questions.
   const wantMaintenance = counts.numReview >= 2 && strong.length > 0 ? 1 : 0;
-  const review: { topic: typeof seq[number]; priority: number }[] = [];
+  const review: { topic: typeof seq[number]; priority: number; maintenance: boolean }[] = [];
   for (const r of weak) {
     if (review.length >= counts.numReview - wantMaintenance) break;
     review.push(r);
@@ -151,8 +164,8 @@ export function selectSequential(
     if (review.length >= counts.numReview) break;
     review.push(r);
   }
-  // Backfill any unused slots from whichever pool still has topics.
-  for (const r of [...weak, ...strong]) {
+  // Backfill unused slots with more WEAK topics only (not extra maintenance).
+  for (const r of weak) {
     if (review.length >= counts.numReview) break;
     if (!review.some((x) => x.topic.id === r.topic.id)) review.push(r);
   }
@@ -172,8 +185,8 @@ export function selectSequential(
       mastery: mastery.get(topic.id)?.mastery,
     });
   }
-  for (const { topic, priority } of review) {
-    selections.push({ topic, reason: 'review', priority, mastery: mastery.get(topic.id)?.mastery });
+  for (const { topic, priority, maintenance } of review) {
+    selections.push({ topic, reason: 'review', priority, mastery: mastery.get(topic.id)?.mastery, maintenance });
   }
   for (const topic of preview) {
     selections.push({ topic, reason: 'preview', priority: 30, mastery: mastery.get(topic.id)?.mastery });

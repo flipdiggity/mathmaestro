@@ -89,11 +89,19 @@ CRITICAL RULES:
 ${FIGURE_SCHEMA_PROMPT}
 ${EXPECTED_ANSWER_SCHEMA_PROMPT}`;
 
+  // Spaced-review of ALREADY-MASTERED topics is capped to a small slice of the
+  // sheet — the bulk must be new/current material and things still being learned.
+  const maintenanceNames = selections.filter((s) => s.maintenance).map((s) => s.topic.name);
+  const maxMaintenance = Math.max(1, Math.floor(totalQuestions * 0.1));
+  const maintenanceCap = maintenanceNames.length
+    ? `\n\nSPACED-REVIEW CAP: ${maintenanceNames.join(', ')} ${maintenanceNames.length === 1 ? 'is a topic' : 'are topics'} ${childName} has ALREADY MASTERED. Include AT MOST ${maxMaintenance} problem${maxMaintenance === 1 ? '' : 's'} total on ${maintenanceNames.length === 1 ? 'it' : 'them'} — a single quick, harder refresher. The other ~${totalQuestions - maxMaintenance}+ problems must be on new/current material and topics still being learned, NOT on mastered topics.`
+    : '';
+
   const prompt = `Create a math worksheet with ${totalQuestions} problems covering these topics:
 
 ${topicDescriptions}
 
-Distribute questions across the topics, giving more weight to [CURRENT] topics (the primary focus for this grading period). For [REVIEW] topics, make problems slightly easier to rebuild confidence. For [CURRENT] topics, start accessible and increase difficulty. For [PREVIEW] topics, keep problems introductory and approachable.
+Distribute questions across the topics, giving more weight to [CURRENT] topics (the primary focus for this grading period). For [REVIEW] topics, make problems slightly easier to rebuild confidence. For [CURRENT] topics, start accessible and increase difficulty. For [PREVIEW] topics, keep problems introductory and approachable.${maintenanceCap}
 
 IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific values, word problem scenarios, and phrasings so that no two worksheets are alike, even for the same topics. Do NOT start with the same type of question each time — vary the order of topic types across worksheets.
 
