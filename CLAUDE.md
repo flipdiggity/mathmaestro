@@ -1,69 +1,32 @@
-# SharpSheet (MathMaestro) — Session Context
+# MathMaestro — Session Context
 
 ## What This App Is
-AI-powered math worksheet generator for parents. Kids get personalized worksheets aligned to Texas TEKS standards, complete them by hand, parents photograph the completed work, and AI grades it. Spaced repetition tracks mastery across topics.
+AI-powered math worksheet generator. Kids get personalized worksheets aligned to Texas TEKS (Eanes ISD pacing), complete them by hand, parents photograph the completed work, and AI grades it. Spaced repetition + a sequential curriculum frontier drive topic selection.
 
-**Tech stack:** Next.js 14, Prisma (Neon Postgres), Clerk auth, Stripe billing, Anthropic Claude API (worksheet generation + grading), deployed on Vercel.
+**Tech stack:** Next.js 14, Prisma (Neon Postgres), Anthropic Claude API (claude-sonnet-4-6 for generation + vision grading), @react-pdf/renderer, Resend (daily email), deployed on Vercel. Clerk + Stripe exist but are dormant (see App modes).
 
 **Live URL:** https://mathmaestro-tan.vercel.app
 **Repo:** https://github.com/flipdiggity/mathmaestro
 
-## What Was Done (March 2, 2026)
+## App modes (June 10, 2026)
+`NEXT_PUBLIC_APP_MODE` env var, build-time inlined (`src/lib/mode.ts`):
+- **personal** (default, currently live) — no auth, no billing. One local user (`local-felipe`) owns the seeded kids (child ids literally `eliana`, `mylo`). The ENTIRE site and API are publicly reachable. Name-keyed tweaks apply: Eliana's start floor (grade 7, order 17) and per-kid diagnostic probes.
+- **saas** — Clerk auth (middleware + `src/lib/auth.ts`; admin emails adopt the local user's children on first sign-in), Stripe pay-per-use (5 free generates + 5 free grades, then card on file; `ADMIN_EMAILS` bypass), public landing page, `/onboarding` wizard, per-family daily emails. To flip: re-add CLERK_*/STRIPE_*/ADMIN_EMAILS/NEXT_PUBLIC_SUPPORT_EMAIL env vars on Vercel (they were removed), set the flag, redeploy.
 
-### Feature 1: All Days of Week
-- `src/app/generate/page.tsx:76` — `ALL_DAYS` expanded from Mon-Thu to all 7 days
-- Backend already supported any day name
+## Deployment
+- `git push` on `summer-rebuild` → Vercel auto-deploys production (~1 min). That is the ONLY deploy path; `npx vercel --prod` has an expired token.
+- Verify with `GET /api/version` (commit SHA, branch, env-readiness booleans) or the Vercel Deployments page.
+- `npm run db:push` only when prisma/schema.prisma changes.
 
-### Feature 2: Admin Billing Bypass
-- `src/lib/admin.ts` — Created `isAdminEmail()` helper, reads `ADMIN_EMAILS` env var (comma-separated)
-- `src/lib/billing.ts` — Admin bypass before free tier check in `checkUsageAllowance()`
-- `src/app/api/billing/usage/route.ts` — Added `isAdmin` boolean to response
-- `src/app/billing/page.tsx` — Shows "Admin — Unlimited Access" badge for admins
-- `src/components/billing/usage-banner.tsx` — Hidden for admin users
-- `src/app/layout.tsx` — Made async, conditionally shows "Admin" nav link
-- Admin email: felipefernandes@hey.com
+## Generation architecture (all paths share one core)
+`src/lib/worksheet-generation.ts # generateAdaptiveWorksheet` is used by:
+- `POST /api/generate` (single sheet — note: route still has an older inline copy, behaviorally equivalent)
+- `POST /api/generate-batch` (multi-day; `windowOffset` slides the current-topic window ONE topic per day — do NOT go back to excluding prior days' topics, that raced 3-6 topics/day into untaught material)
+- `GET/POST /api/cron/daily-email` (Vercel cron `0 11 * * 1-5` UTC = 6am CT; supports `?dryRun=1` and `?secret=` manual trigger)
 
-### Feature 3: Support Contact + Admin Panel
-- `src/components/landing/landing-page.tsx` — "Contact support" mailto in footer
-- `src/app/billing/page.tsx` — Support email link below pricing
-- `src/app/api/admin/users/route.ts` — GET: search user by email, returns user info + usage
-- `src/app/api/admin/credits/route.ts` — POST: `delete-record` (single refund) and `add-credits` (bulk restore)
-- `src/app/admin/page.tsx` — Full admin UI with user lookup, usage stats, credit buttons, record list
+Topic selection: `src/lib/curriculum/sequencing.ts`. Frontier = first unmastered topic past the start floor. Mastered ≥80; skip-marked topics are mastery=100/timesPracticed=0 and NEVER resurface; spaced "maintenance" review of graded-mastered topics expands 1→2→4→…→30 days, ≤1 topic and ≤10% of questions per sheet, retired at ≥95% with 4+ practices. Selection ignores TopicMastery rows whose topicId isn't in the current curriculum pool (older ID schemes left orphans; `POST /api/admin/cleanup-mastery` deletes them).
 
-### Fix: Duplicate Worksheets
-- Problem: Topic selection is deterministic (same child + no grading = same topics). Temperature 0.3 produced near-identical output.
-- `src/app/api/generate/route.ts` — Temperature bumped 0.3 → 0.7
-- `src/app/api/generate-batch/route.ts` — Same temperature bump
-- `src/lib/prompts/generate-worksheet.ts` — Added instruction to vary numbers, contexts, and phrasing
-
-### Env Vars Added
-- `ADMIN_EMAILS="felipefernandes@hey.com"` — set in .env and Vercel
-- `NEXT_PUBLIC_SUPPORT_EMAIL="felipefernandes@hey.com"` — set in .env and Vercel
-
-## Vercel Deployment
-- Project: `felipefernandes-9260s-projects/mathmaestro`
-- All env vars are configured including the two new ones
-- Deploys via `npx vercel --prod` (not auto-deploy from GitHub)
-- Two commits pushed and deployed:
-  - `c64173c` — All-week + admin bypass + admin panel + support contact
-  - `34862b2` — Fix duplicate worksheets
-
-## Incomplete: B-Roll Video Generation
-- Script at `scripts/generate-broll.sh` — uses Google Veo 3 API (`predictLongRunning` endpoint)
-- Google API key: stored in the session (user has it), project "SharpSheet" on Google AI Studio, Tier 1
-- 2 of 5 clips generated successfully in `broll-clips/`:
-  - `01-kid-writing.mp4` (1.2 MB) — kid writing math at desk
-  - `02-parent-helping.mp4` (2.4 MB) — parent and child at table
-- 3 clips remaining (hit daily rate limit):
-  - `03-phone-photo` — photographing worksheet
-  - `04-kid-celebrating` — fist pump celebration
-  - `05-morning-routine` — kitchen morning scene
-- User saw the 2 generated clips and said "those are bad" — may want to skip or revise prompts
-- To retry: `GEMINI_API_KEY="AIzaSyBrtc8lvHNIS96emvNz5op7-PaCtlYUP74" bash scripts/generate-broll.sh`
-
-## Key Architecture Notes
-- Clerk middleware protects all routes except `/`, `/sign-in`, `/sign-up`, `/api/webhooks`
-- `getCurrentUser()` in `src/lib/auth.ts` auto-creates DB user on first API call after Clerk signup
-- Billing works by counting `UsageRecord` rows — deleting records = restoring credits
-- Spaced repetition in `src/lib/spaced-repetition.ts` selects topics by mastery + order field
-- Worksheet generation uses Claude Sonnet via `src/lib/anthropic.ts`
+## Known issues / state (June 10, 2026)
+- The daily cron has NEVER successfully written a worksheet: per-child generation fails inside the cron's try/catch and the error used to be visible only in the emailed report. As of commit "Harden daily generation…" failures are console.error'd (check Vercel function logs), generation retries once, maxTokens 16384. Root cause not yet confirmed — diagnose via logs after next run.
+- Grading old worksheets (pre-curriculum-change) writes mastery rows under old topic IDs; harmless (filtered), cleanup endpoint exists.
+- June 10: bad June-8 batch sheets (Wed–Fri) for Mylo were deleted from the DB; fresh frontier-correct sheets were generated for both kids for Wednesday June 10.
