@@ -116,6 +116,9 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
         missedCount: missedTopicIds.length,
       });
     } catch (e) {
+      // Surface the failure in the function logs — these errors were
+      // previously swallowed into the email body only.
+      console.error(`daily-email: generation failed for ${child.name}:`, e);
       reports.push({
         name: child.name,
         ok: false,
@@ -145,6 +148,9 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
   }
 
   const allOk = sendResults.every((r) => r.ok);
+  // Log the outcome so the Vercel function log shows what happened without
+  // needing to open the email.
+  console.log('daily-email result:', JSON.stringify({ ok: allOk, sends: sendResults, reports: allReports }));
   return {
     status: allOk ? 200 : 502,
     body: { ok: allOk, sends: sendResults, reports: allReports },

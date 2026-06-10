@@ -124,14 +124,35 @@ export async function generateAdaptiveWorksheet(
     questionCount,
     previousQuestions
   );
-  const responseText = await generateText(prompt, { system, temperature: 0.7, maxTokens: 8192 });
-
-  let cleaned = responseText.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  // Generate with one retry: a truncated/malformed JSON response (the usual
+  // failure mode at high temperature) should not kill the child's daily sheet.
+  let parsed: { title: string; questions: Question[] } | null = null;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
+    try {
+      const responseText = await generateText(prompt, {
+        system,
+        temperature: 0.7,
+        maxTokens: 16384,
+      });
+      let cleaned = responseText.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      }
+      parsed = JSON.parse(cleaned) as { title: string; questions: Question[] };
+    } catch (e) {
+      lastError = e;
+      console.error(
+        `generateAdaptiveWorksheet: attempt ${attempt + 1} failed for ${child.name}:`,
+        e instanceof Error ? e.message : e
+      );
+    }
   }
-
-  const parsed = JSON.parse(cleaned) as { title: string; questions: Question[] };
+  if (!parsed) {
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Worksheet generation failed for ${child.name}`);
+  }
   const verifiedQuestions = verifyWorksheetAnswers(parsed.questions);
 
   const imageTopicMap = new Map<string, { requiresImage: boolean; imageType?: string }>();

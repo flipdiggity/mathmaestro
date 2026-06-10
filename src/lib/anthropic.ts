@@ -21,7 +21,7 @@ export async function generateText(
   const { system, temperature = 0.3, maxTokens = 4096 } = options;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: maxTokens,
     temperature,
     ...(system ? { system } : {}),
@@ -45,7 +45,7 @@ export async function gradeWithVision(
   const { system, maxTokens = 4096 } = options;
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: maxTokens,
     temperature: 0,
     ...(system ? { system } : {}),
@@ -98,7 +98,7 @@ export async function gradeWithMultipleImages(
   ];
 
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: maxTokens,
     temperature: 0,
     ...(system ? { system } : {}),
