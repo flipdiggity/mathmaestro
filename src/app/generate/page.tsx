@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -146,11 +146,14 @@ function GeneratePageInner() {
         );
         setChildren(list);
 
+        // Preselect via ?childId=<id> (dashboard links) or ?child=<name>.
+        const idParam = searchParams.get('childId');
         const childParam = searchParams.get('child')?.toLowerCase();
-        if (childParam) {
-          const match = list.find((c) => c.name.toLowerCase() === childParam);
-          if (match) setSelectedChildId(match.id);
-        }
+        const match =
+          (idParam && list.find((c) => c.id === idParam)) ||
+          (childParam && list.find((c) => c.name.toLowerCase() === childParam)) ||
+          null;
+        if (match) setSelectedChildId(match.id);
       } catch {
         setError('Failed to load children.');
       } finally {
@@ -160,6 +163,20 @@ function GeneratePageInner() {
     fetchChildren();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ------------------------------------------------------------------
+  // Auto-start the placement diagnostic when arriving from onboarding
+  // (?childId=...&diagnostic=1). Runs once after the child is preselected.
+  // ------------------------------------------------------------------
+  const autoDiagnosticFired = useRef(false);
+  useEffect(() => {
+    if (autoDiagnosticFired.current) return;
+    if (searchParams.get('diagnostic') && selectedChildId) {
+      autoDiagnosticFired.current = true;
+      handleDiagnostic();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChildId]);
 
   // ------------------------------------------------------------------
   // Fetch topics when child or mode changes

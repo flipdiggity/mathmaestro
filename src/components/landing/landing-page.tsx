@@ -11,12 +11,13 @@ export function LandingPage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 to-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight text-balance">
-            AI-powered practice that{' '}
+            Extra math homework that{' '}
             <span className="text-indigo-600">adapts to your child</span>
           </h1>
           <p className="mt-6 text-lg text-slate-600 max-w-2xl mx-auto text-balance">
-            Generate personalized math worksheets aligned to your school&apos;s curriculum.
-            Grade them instantly with AI vision. Track mastery with spaced repetition.
+            Print-ready worksheets matched to the Eanes ISD curriculum, at your child&apos;s
+            level. They work on paper, you snap a photo, AI grades it — and the next
+            worksheet adjusts to what they missed.
           </p>
           <div className="mt-8 flex items-center justify-center gap-4">
             <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-base px-8">
@@ -132,8 +133,10 @@ export function LandingPage() {
             Aligned to Texas TEKS standards
           </h2>
           <p className="text-slate-600 mb-6">
-            Every worksheet is generated from a carefully curated curriculum that matches what your
-            child is learning in school. Support for grades 3-7 with standard and accelerated tracks.
+            Every worksheet is generated from a curated curriculum that matches what your child is
+            learning in school — grades 3 through 8, standard and accelerated tracks, including a
+            placement check so practice starts where your child actually is, not where the textbook
+            starts.
           </p>
           <p className="text-sm text-slate-400">
             More districts and states coming soon.
@@ -187,7 +190,7 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-slate-400">
-          <p>&copy; {new Date().getFullYear()} SharpSheet. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} MathMaestro. All rights reserved.</p>
           {process.env.NEXT_PUBLIC_SUPPORT_EMAIL && (
             <p className="mt-2">
               <a

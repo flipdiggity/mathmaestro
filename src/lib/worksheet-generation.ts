@@ -62,17 +62,34 @@ export async function getRecentQuestionTexts(childId: string, maxQuestions = 45)
 
 export async function generateAdaptiveWorksheet(
   child: GenerationChild,
-  opts: { questionCount?: number; biasTopicIds?: string[]; dayOfWeek?: string } = {}
+  opts: {
+    questionCount?: number;
+    biasTopicIds?: string[];
+    dayOfWeek?: string;
+    /** Day index in a multi-day batch (0-based). Slides the current-topic
+     * window forward one topic per day so a week advances gradually. */
+    windowOffset?: number;
+    /** Extra question texts to avoid (e.g. earlier days of the same batch). */
+    avoidQuestions?: string[];
+    /** Prefix for the stored title (the batch flow uses "Monday: ..."). */
+    titlePrefix?: string;
+    /** Bypass adaptive selection entirely (parent hand-picked topics). */
+    forcedSelections?: TopicSelection[];
+  } = {}
 ): Promise<GeneratedWorksheetResult> {
   const questionCount = opts.questionCount ?? 25;
   const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
 
-  const { selections } = await selectTopics(
-    child.id,
-    allTopics,
-    questionCount,
-    child.targetTestDate ?? undefined
-  );
+  const { selections } = opts.forcedSelections
+    ? { selections: opts.forcedSelections }
+    : await selectTopics(
+        child.id,
+        allTopics,
+        questionCount,
+        child.targetTestDate ?? undefined,
+        undefined,
+        opts.windowOffset
+      );
 
   // Force-include yesterday's missed topics as extra review practice.
   const selectionList: TopicSelection[] = [...selections];
@@ -95,7 +112,10 @@ export async function generateAdaptiveWorksheet(
 
   // Cross-day variety: tell the model what it already gave this child recently so
   // it doesn't keep re-emitting the same canonical problem (e.g. y = 3x - 5).
-  const previousQuestions = await getRecentQuestionTexts(child.id);
+  const previousQuestions = [
+    ...(opts.avoidQuestions ?? []),
+    ...(await getRecentQuestionTexts(child.id)),
+  ].slice(0, 60);
 
   const { system, prompt } = buildGeneratePrompt(
     child.name,
@@ -144,7 +164,7 @@ export async function generateAdaptiveWorksheet(
   const worksheet = await prisma.worksheet.create({
     data: {
       childId: child.id,
-      title: parsed.title,
+      title: opts.titlePrefix ? `${opts.titlePrefix}: ${parsed.title}` : parsed.title,
       weekNumber: getWeekNumber(new Date()),
       dayOfWeek: opts.dayOfWeek ?? null,
       questionsJson: JSON.stringify(questions),

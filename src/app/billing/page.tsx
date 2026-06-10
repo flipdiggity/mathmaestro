@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
+import { isSaas } from '@/lib/mode';
+import { BillingView } from '@/components/billing/billing-view';
 
-// Personal-use rebuild: no billing. Redirect to home.
 export default function BillingPage() {
-  redirect('/');
+  if (!isSaas) redirect('/');
+  return <BillingView />;
 }

@@ -3,8 +3,10 @@ export const dynamic = 'force-dynamic';
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
+import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { MobileNav } from "@/components/nav/mobile-nav";
 import { SmartLink } from "@/components/nav/smart-link";
+import { isSaas } from "@/lib/mode";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -18,14 +20,23 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Math Maestro — Summer Edition",
-    template: "%s | Math Maestro",
-  },
-  description:
-    "Personal math worksheet generator for Eliana & Mylo's summer 2026 math practice.",
-};
+export const metadata: Metadata = isSaas
+  ? {
+      title: {
+        default: "MathMaestro — Adaptive Math Practice for Your Child",
+        template: "%s | MathMaestro",
+      },
+      description:
+        "AI-generated math worksheets aligned to Eanes ISD and Texas TEKS. Print, practice by hand, photograph, and let AI grade and adapt the next worksheet.",
+    }
+  : {
+      title: {
+        default: "Math Maestro — Summer Edition",
+        template: "%s | Math Maestro",
+      },
+      description:
+        "Personal math worksheet generator for Eliana & Mylo's summer 2026 math practice.",
+    };
 
 const navLinks = [
   { href: "/", label: "Today" },
@@ -34,13 +45,10 @@ const navLinks = [
   { href: "/plan", label: "Plan" },
   { href: "/worksheets", label: "History" },
   { href: "/children", label: "Children" },
+  ...(isSaas ? [{ href: "/billing", label: "Billing" }] : []),
 ];
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body
@@ -55,24 +63,79 @@ export default function RootLayout({
               Math<span className="text-indigo-600">Maestro</span>
             </Link>
 
-            <div className="hidden sm:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <SmartLink
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  {link.label}
-                </SmartLink>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 sm:hidden">
-              <MobileNav links={navLinks} />
-            </div>
+            {isSaas ? (
+              <>
+                <SignedIn>
+                  <div className="hidden sm:flex items-center gap-6">
+                    {navLinks.map((link) => (
+                      <SmartLink
+                        key={link.href}
+                        href={link.href}
+                        className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                      >
+                        {link.label}
+                      </SmartLink>
+                    ))}
+                    <UserButton afterSignOutUrl="/" />
+                  </div>
+                  <div className="flex items-center gap-3 sm:hidden">
+                    <UserButton afterSignOutUrl="/" />
+                    <MobileNav links={navLinks} />
+                  </div>
+                </SignedIn>
+                <SignedOut>
+                  <div className="flex items-center gap-3">
+                    <SignInButton mode="redirect">
+                      <button className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                        Sign in
+                      </button>
+                    </SignInButton>
+                    <Link
+                      href="/sign-up"
+                      className="text-sm font-medium bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                      Get started
+                    </Link>
+                  </div>
+                </SignedOut>
+              </>
+            ) : (
+              <>
+                <div className="hidden sm:flex items-center gap-6">
+                  {navLinks.map((link) => (
+                    <SmartLink
+                      key={link.href}
+                      href={link.href}
+                      className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                    >
+                      {link.label}
+                    </SmartLink>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 sm:hidden">
+                  <MobileNav links={navLinks} />
+                </div>
+              </>
+            )}
           </div>
         </nav>
         {children}
       </body>
     </html>
   );
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  if (isSaas) {
+    return (
+      <ClerkProvider>
+        <Shell>{children}</Shell>
+      </ClerkProvider>
+    );
+  }
+  return <Shell>{children}</Shell>;
 }

@@ -8,6 +8,7 @@ import {
 } from '@/lib/worksheet-generation';
 import { sendEmail, EmailAttachment } from '@/lib/email';
 import { buildDailyEmailHtml, ChildReport } from '@/lib/daily-email-template';
+import { isSaas } from '@/lib/mode';
 
 // Allow up to 5 min — generating + rendering two worksheets calls the LLM twice.
 export const maxDuration = 300;
@@ -15,7 +16,7 @@ export const maxDuration = 300;
 async function runDailyEmail(): Promise<{ status: number; body: Record<string, unknown> }> {
   const allChildren = await prisma.child.findMany({
     orderBy: { grade: 'desc' },
-    include: { _count: { select: { worksheets: true } } },
+    include: { _count: { select: { worksheets: true } }, user: true },
   });
 
   // Defensive dedupe: if duplicate child rows exist for the same name (e.g. a
@@ -38,9 +39,15 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
     return { status: 200, body: { ok: true, message: 'No children to generate for' } };
   }
 
-  const reports: ChildReport[] = [];
-  const topicsByChild: Record<string, string[]> = {};
-  const attachments: EmailAttachment[] = [];
+  // Group children by owning user. Each family gets ONE email with only their
+  // own kids' worksheets — in personal mode there's a single local user and
+  // the recipient falls back to DAILY_EMAIL_TO, exactly as before.
+  const byUser = new Map<string, { email: string | null; children: typeof children }>();
+  for (const c of children) {
+    const entry = byUser.get(c.userId) ?? { email: c.user?.email ?? null, children: [] };
+    entry.children.push(c);
+    byUser.set(c.userId, entry);
+  }
 
   const today = new Date();
   const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
@@ -51,7 +58,15 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
     day: 'numeric',
   });
 
-  for (const child of children) {
+  const allReports: ChildReport[] = [];
+  const sendResults: Array<{ user: string; ok: boolean; error?: string }> = [];
+
+  for (const group of Array.from(byUser.values())) {
+  const reports: ChildReport[] = [];
+  const topicsByChild: Record<string, string[]> = {};
+  const attachments: EmailAttachment[] = [];
+
+  for (const child of group.children) {
     try {
       // Yesterday's recap: most recent graded worksheet (score + missed topics).
       const lastGraded = await prisma.worksheet.findFirst({
@@ -110,15 +125,29 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
   }
 
   const html = buildDailyEmailHtml(dateStr, reports, topicsByChild);
+  // In saas mode each family's email goes to the account owner. A 'felipe@local'
+  // personal-mode address isn't routable; fall back to DAILY_EMAIL_TO (default
+  // recipient inside sendEmail) for the local user.
+  const recipient =
+    isSaas && group.email && !group.email.endsWith('@local') ? group.email : undefined;
   const send = await sendEmail({
+    to: recipient,
     subject: `Math Maestro — ${dateStr}`,
     html,
     attachments,
   });
+  allReports.push(...reports);
+  sendResults.push({
+    user: group.email ?? 'unknown',
+    ok: send.ok,
+    error: send.error,
+  });
+  }
 
+  const allOk = sendResults.every((r) => r.ok);
   return {
-    status: send.ok ? 200 : 502,
-    body: { ok: send.ok, emailId: send.id, emailError: send.error, reports },
+    status: allOk ? 200 : 502,
+    body: { ok: allOk, sends: sendResults, reports: allReports },
   };
 }
 
@@ -136,6 +165,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
+    // ?dryRun=1 → report what WOULD happen (children, env readiness) without
+    // generating worksheets or sending email. Safe to hit for diagnostics.
+    if (request.nextUrl.searchParams.get('dryRun')) {
+      const allChildren = await prisma.child.findMany({
+        select: { id: true, name: true, grade: true, emailEnabled: true },
+        orderBy: { grade: 'desc' },
+      });
+      return NextResponse.json({
+        dryRun: true,
+        wouldGenerateFor: allChildren.filter((c) => c.emailEnabled !== false),
+        skipped: allChildren.filter((c) => c.emailEnabled === false),
+        env: {
+          resendKey: Boolean(process.env.RESEND_API_KEY),
+          dailyEmailTo: Boolean(process.env.DAILY_EMAIL_TO),
+          cronSecret: Boolean(process.env.CRON_SECRET),
+          anthropicKey: Boolean(process.env.ANTHROPIC_API_KEY),
+        },
+        serverTimeUtc: new Date().toISOString(),
+      });
+    }
     const { status, body } = await runDailyEmail();
     return NextResponse.json(body, { status });
   } catch (error) {

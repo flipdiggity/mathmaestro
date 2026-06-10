@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
 import { checkUsageAllowance, recordUsage } from '@/lib/billing';
-import { generateText } from '@/lib/anthropic';
-import { selectTopics, type Pacing } from '@/lib/spaced-repetition';
 import { getTopicsForChild } from '@/lib/curriculum';
-import { buildGeneratePrompt } from '@/lib/prompts/generate-worksheet';
-import { verifyWorksheetAnswers } from '@/lib/answer-verifier';
-import { sanitizeStudentDrawFigure } from '@/lib/student-figure';
+import { generateAdaptiveWorksheet } from '@/lib/worksheet-generation';
+import { TopicSelection } from '@/lib/curriculum/types';
 import { Question } from '@/types';
+
+// Multi-day batch generation. Each day reuses the SAME shared generation core
+// as the single-sheet and cron paths (no drift), with the current-topic window
+// sliding forward ONE topic per day. A week of sheets therefore practices the
+// frontier with heavy overlap and fresh problems, instead of leaping a whole
+// topic-window per day and racing into material the child has never seen.
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,21 +39,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Child not found' }, { status: 404 });
     }
 
-    // Check billing for all worksheets in batch
-    for (let i = 0; i < days.length; i++) {
-      const allowed = await checkUsageAllowance(user.id, 'generate');
-      if (!allowed.allowed) {
-        return NextResponse.json(
-          { error: 'Usage limit reached', requiresPayment: true, message: allowed.message },
-          { status: 402 }
-        );
+    const allowed = await checkUsageAllowance(user.id, 'generate');
+    if (!allowed.allowed) {
+      return NextResponse.json(
+        { error: 'Usage limit reached', requiresPayment: true, message: allowed.message },
+        { status: 402 }
+      );
+    }
+
+    // Parent hand-picked topics → same topics every day (variety comes from
+    // the avoid-list); otherwise adaptive with the sliding window.
+    let forcedSelections: TopicSelection[] | undefined;
+    if (selectedTopicIds && selectedTopicIds.length > 0) {
+      const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
+      forcedSelections = allTopics
+        .filter((t) => selectedTopicIds.includes(t.id))
+        .map((t) => ({ topic: t, reason: 'current' as const, priority: 100 }));
+      if (forcedSelections.length === 0) {
+        return NextResponse.json({ error: 'Selected topics not found' }, { status: 400 });
       }
     }
 
-    const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
-
-    const excludeNewTopicIds = new Set<string>();
-    const previousQuestions: string[] = [];
+    const avoidQuestions: string[] = [];
+    const now = new Date();
+    const weekNumber = Math.ceil(
+      ((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / 86_400_000 +
+        new Date(now.getFullYear(), 0, 1).getDay() +
+        1) /
+        7
+    );
     const worksheets: Array<{
       id: string;
       title: string;
@@ -59,145 +76,59 @@ export async function POST(request: NextRequest) {
       questions: Question[];
       topicIds: string[];
     }> = [];
+    const errors: Array<{ day: string; error: string }> = [];
 
-    let pacing: Pacing = 'steady';
-    const weekNumber = getWeekNumber(new Date());
-
-    for (const day of days) {
-      let selections;
-
-      if (selectedTopicIds && selectedTopicIds.length > 0) {
-        const selectedTopics = allTopics.filter((t) =>
-          selectedTopicIds.includes(t.id)
-        );
-        selections = selectedTopics.map((t) => ({
-          topic: t,
-          reason: 'new' as const,
-          priority: 100,
-        }));
-      } else {
-        const result = await selectTopics(
-          childId,
-          allTopics,
-          questionCount,
-          child.targetTestDate,
-          excludeNewTopicIds
-        );
-        selections = result.selections;
-        pacing = result.pacing;
-
-        for (const id of result.primaryNewTopicIds) {
-          excludeNewTopicIds.add(id);
-        }
-      }
-
-      if (selections.length === 0) {
-        continue;
-      }
-
-      const topicReasonMap = new Map<string, 'new' | 'review'>();
-      for (const s of selections) {
-        topicReasonMap.set(s.topic.id, s.reason === 'review' ? 'review' : 'new');
-      }
-
-      const imageTopicMap = new Map<string, { requiresImage: boolean; imageType?: string }>();
-      for (const t of allTopics) {
-        if (t.requiresImage) {
-          imageTopicMap.set(t.id, { requiresImage: true, imageType: t.imageType });
-        }
-      }
-
-      const { system, prompt } = buildGeneratePrompt(
-        child.name,
-        child.grade,
-        selections,
-        questionCount,
-        previousQuestions.length > 0 ? previousQuestions : undefined
-      );
-
-      const responseText = await generateText(prompt, {
-        system,
-        temperature: 0.7,
-        maxTokens: 8192,
-      });
-
-      let cleaned = responseText.trim();
-      if (cleaned.startsWith('```')) {
-        cleaned = cleaned
-          .replace(/^```(?:json)?\n?/, '')
-          .replace(/\n?```$/, '');
-      }
-
-      let parsed: { title: string; questions: Question[] };
+    for (let dayIndex = 0; dayIndex < days.length; dayIndex++) {
+      const day = days[dayIndex];
       try {
-        parsed = JSON.parse(cleaned);
-      } catch {
-        continue;
-      }
+        const result = await generateAdaptiveWorksheet(
+          {
+            id: child.id,
+            name: child.name,
+            grade: child.grade,
+            track: child.track,
+            state: child.state,
+            district: child.district,
+            targetTestDate: child.targetTestDate,
+          },
+          {
+            questionCount,
+            dayOfWeek: day,
+            titlePrefix: day,
+            windowOffset: dayIndex,
+            avoidQuestions: [...avoidQuestions],
+            forcedSelections,
+          }
+        );
 
-      const verifiedQuestions = verifyWorksheetAnswers(parsed.questions);
-      const questions: Question[] = verifiedQuestions.map((q, idx) => {
-        const section = q.section || topicReasonMap.get(q.topicId) || 'new';
-        const imgMeta = imageTopicMap.get(q.topicId);
-        return {
-          number: idx + 1,
-          question: q.question,
-          answer: q.answer,
-          topicId: q.topicId,
-          topicName: q.topicName,
-          difficulty: q.difficulty,
-          isVerifiable: q.isVerifiable,
-          section: section as 'new' | 'review',
-          // Structured figure (preferred) — carry through whatever the model emitted.
-          figure: sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer).figure,
-          // Structured expected answer for the grader (optional).
-          expectedAnswer: sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer).expectedAnswer,
-          // Legacy fallback flags, kept for back-compat with the renderer.
-          hasGrid: q.hasGrid || imgMeta?.requiresImage || false,
-          gridType: q.gridType || (imgMeta?.imageType as Question['gridType']) || undefined,
-        };
-      });
+        await recordUsage(user.id, 'generate', result.worksheetId);
 
-      const worksheet = await prisma.worksheet.create({
-        data: {
-          childId,
-          title: `${day}: ${parsed.title}`,
-          weekNumber,
+        for (const q of result.questions) avoidQuestions.push(q.question);
+        if (avoidQuestions.length > 60) {
+          avoidQuestions.splice(0, avoidQuestions.length - 60);
+        }
+
+        worksheets.push({
+          id: result.worksheetId,
+          title: result.title,
           dayOfWeek: day,
-          questionsJson: JSON.stringify(questions),
-          topicIdsJson: JSON.stringify(selections.map((s) => s.topic.id)),
-          status: 'generated',
-        },
-      });
-
-      await recordUsage(user.id, 'generate', worksheet.id);
-
-      // Track questions for dedup across days (keep last 30 to avoid prompt bloat)
-      for (const q of questions) {
-        previousQuestions.push(q.question);
+          weekNumber,
+          questions: result.questions,
+          topicIds: result.topicIds,
+        });
+      } catch (e) {
+        errors.push({ day, error: e instanceof Error ? e.message : 'generation failed' });
       }
-      if (previousQuestions.length > 60) {
-        previousQuestions.splice(0, previousQuestions.length - 60);
-      }
-
-      worksheets.push({
-        id: worksheet.id,
-        title: parsed.title,
-        dayOfWeek: day,
-        weekNumber,
-        questions,
-        topicIds: selections.map((s) => s.topic.id),
-      });
     }
 
     if (worksheets.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to generate any worksheets' },
+        { error: 'Failed to generate any worksheets', errors },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ worksheets, pacing });
+    return NextResponse.json({ worksheets, errors: errors.length ? errors : undefined });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -208,10 +139,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-function getWeekNumber(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 1);
-  const diff = date.getTime() - start.getTime();
-  return Math.ceil((diff / (1000 * 60 * 60 * 24) + start.getDay() + 1) / 7);
 }

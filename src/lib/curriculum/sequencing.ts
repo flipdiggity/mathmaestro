@@ -34,6 +34,12 @@ const START_FLOORS: Record<string, StartFloor> = {
 };
 
 export function getStartFloor(childName: string, baseGrade: number): StartFloor {
+  // Name-keyed floors are a personal-mode convenience for the seeded kids.
+  // In saas mode a customer's child who happens to share the name must NOT
+  // inherit them — placement comes from the diagnostic instead.
+  if (process.env.NEXT_PUBLIC_APP_MODE === 'saas') {
+    return { grade: baseGrade, fromOrder: 1 };
+  }
   return START_FLOORS[childName.trim().toLowerCase()] ?? { grade: baseGrade, fromOrder: 1 };
 }
 
@@ -89,10 +95,19 @@ export function selectSequential(
     counts: SeqCounts;
     excludeIds?: Set<string>;
     now?: Date;
+    /**
+     * Slide the CURRENT window forward by this many unmastered topics.
+     * Used for multi-day batches: day N passes windowOffset = N so the week
+     * advances gradually (one new topic per day, heavy overlap for real
+     * practice) instead of leaping a whole window per day and racing into
+     * untaught material.
+     */
+    windowOffset?: number;
   }
 ): SelectSequentialResult {
   const now = opts.now ?? new Date();
   const { floorIndex, counts, excludeIds } = opts;
+  const windowOffset = Math.max(0, opts.windowOffset ?? 0);
   const isMastered = (t: CurriculumTopic) => (mastery.get(t.id)?.mastery ?? -1) >= MASTERED;
   const isPracticed = (t: CurriculumTopic) => mastery.has(t.id);
 
@@ -100,12 +115,18 @@ export function selectSequential(
   let frontier = floorIndex;
   while (frontier < seq.length && isMastered(seq[frontier])) frontier++;
 
-  // CURRENT — the next `numCurrent` unmastered topics, in order.
+  // CURRENT — the next `numCurrent` unmastered topics, in order, starting
+  // `windowOffset` unmastered topics past the frontier (0 for a single sheet).
   const current: CurriculumTopic[] = [];
   let i = frontier;
+  let skipped = 0;
   for (; i < seq.length && current.length < counts.numCurrent; i++) {
     const t = seq[i];
     if (isMastered(t) || excludeIds?.has(t.id)) continue;
+    if (skipped < windowOffset) {
+      skipped++;
+      continue;
+    }
     current.push(t);
   }
   const usedIds = new Set(current.map((t) => t.id));

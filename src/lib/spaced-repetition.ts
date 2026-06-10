@@ -61,11 +61,17 @@ export async function selectTopics(
   topics: CurriculumTopic[],
   totalQuestions: number = 25,
   _targetTestDate?: Date | null,
-  excludeNewTopicIds?: Set<string>
+  excludeNewTopicIds?: Set<string>,
+  windowOffset?: number
 ): Promise<SelectTopicsResult> {
   const masteryRecords = await prisma.topicMastery.findMany({ where: { childId } });
+  // Only records that match a topic in the CURRENT curriculum pool count.
+  // Old curricula used different topic-ID schemes (numeric "6", TEKS "3.4A");
+  // those orphaned rows must not steer selection or the UI.
+  const poolIds = new Set(topics.map((t) => t.id));
   const masteryMap = new Map<string, SeqMastery>();
   for (const r of masteryRecords) {
+    if (!poolIds.has(r.topicId)) continue;
     masteryMap.set(r.topicId, {
       mastery: r.mastery,
       lastPracticedAt: r.lastPracticedAt,
@@ -87,6 +93,7 @@ export async function selectTopics(
     floorIndex,
     counts,
     excludeIds: excludeNewTopicIds,
+    windowOffset,
   });
 
   return { selections, pacing, primaryNewTopicIds };

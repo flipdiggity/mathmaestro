@@ -1,11 +1,22 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { requireUser } from '@/lib/auth';
+import { getCurrentUser, requireUser } from '@/lib/auth';
+import { isSaas } from '@/lib/mode';
+import { LandingPage } from '@/components/landing/landing-page';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const user = await requireUser();
+  let user;
+  if (isSaas) {
+    user = await getCurrentUser();
+    // Signed-out visitor → marketing landing page.
+    if (!user) return <LandingPage />;
+  } else {
+    user = await requireUser();
+  }
+
   const children = await prisma.child.findMany({
     where: { userId: user.id },
     orderBy: { name: 'asc' },
@@ -17,11 +28,16 @@ export default async function HomePage() {
     },
   });
 
+  // New saas user with no children yet → onboarding.
+  if (isSaas && children.length === 0) {
+    redirect('/onboarding');
+  }
+
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">
-          Summer 2026 — Daily Math
+          {isSaas ? 'Daily Math' : 'Summer 2026 — Daily Math'}
         </h1>
         <p className="mt-1 text-sm text-slate-600">
           Pick a kid to generate or review today&rsquo;s worksheet.
@@ -73,6 +89,14 @@ export default async function HomePage() {
               </div>
             );
           })}
+          {isSaas && (
+            <Link
+              href="/children"
+              className="rounded-lg border border-dashed border-slate-300 bg-white p-5 flex items-center justify-center text-sm font-medium text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
+            >
+              + Add another child
+            </Link>
+          )}
         </div>
       )}
     </main>

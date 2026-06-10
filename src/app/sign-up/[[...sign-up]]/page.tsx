@@ -1,6 +1,12 @@
 import { redirect } from 'next/navigation';
+import { SignUp } from '@clerk/nextjs';
+import { isSaas } from '@/lib/mode';
 
-// Personal-use rebuild: no auth, no sign-up. Redirect to home.
 export default function SignUpPage() {
-  redirect('/');
+  if (!isSaas) redirect('/');
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <SignUp />
+    </div>
+  );
 }

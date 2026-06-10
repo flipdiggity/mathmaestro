@@ -98,7 +98,13 @@ function buildFallbackProbe(child: DiagnosticChildInput): DiagnosticProbe {
 }
 
 export function getDiagnosticProbe(child: DiagnosticChildInput): ResolvedDiagnostic {
-  const probe = NAMED_PROBES[child.name.trim().toLowerCase()] ?? buildFallbackProbe(child);
+  // Name-keyed probes are tuned to the seeded personal-mode kids; saas
+  // children always get the generic grade-based probe.
+  const namedProbe =
+    process.env.NEXT_PUBLIC_APP_MODE === 'saas'
+      ? undefined
+      : NAMED_PROBES[child.name.trim().toLowerCase()];
+  const probe = namedProbe ?? buildFallbackProbe(child);
 
   const topics = probe.topicIds
     .map((id) => getTopicById(id))
