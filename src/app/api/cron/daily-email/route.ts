@@ -13,27 +13,44 @@ import { isSaas } from '@/lib/mode';
 // Allow up to 5 min — generating + rendering two worksheets calls the LLM twice.
 export const maxDuration = 300;
 
+// The ACTIVE children live under the personal-mode local user. Stale SaaS-era
+// duplicates (same names, months of old worksheets, NO current mastery/skips)
+// also exist in the DB — for weeks the old name-based "most worksheets wins"
+// dedupe selected THOSE, so every emailed sheet ignored the kids' real skip and
+// mastery state while the website (scoped to the local user) looked fine.
+const PERSONAL_USER_ID = 'local-felipe';
+
 async function runDailyEmail(): Promise<{ status: number; body: Record<string, unknown> }> {
   const allChildren = await prisma.child.findMany({
+    // personal mode: ONLY the local user's children. saas mode: everyone's.
+    where: isSaas ? undefined : { userId: PERSONAL_USER_ID },
     orderBy: { grade: 'desc' },
     include: { _count: { select: { worksheets: true } }, user: true },
   });
 
-  // Defensive dedupe: if duplicate child rows exist for the same name (e.g. a
-  // kid was added twice), keep only the one with the most worksheet history so
-  // we don't email two sets per kid.
-  const byName = new Map<string, (typeof allChildren)[number]>();
+  // Defensive dedupe WITHIN each user: if a kid was added twice, keep the row
+  // with the most RECENT activity (updatedAt of newest worksheet not available
+  // cheaply, so prefer current-curriculum signal: most worksheets, ties to the
+  // newer row). Never dedupe across different users' children.
+  const byKey = new Map<string, (typeof allChildren)[number]>();
   for (const c of allChildren) {
-    // Skip children with the daily email turned off. (Cast tolerates a stale
-    // local Prisma client; the field exists after `prisma generate` on deploy.)
+    // Skip children with the daily email turned off.
     if ((c as { emailEnabled?: boolean }).emailEnabled === false) continue;
-    const key = c.name.trim().toLowerCase();
-    const existing = byName.get(key);
-    if (!existing || c._count.worksheets > existing._count.worksheets) {
-      byName.set(key, c);
+    const key = `${c.userId}::${c.name.trim().toLowerCase()}`;
+    const existing = byKey.get(key);
+    if (
+      !existing ||
+      c._count.worksheets > existing._count.worksheets ||
+      (c._count.worksheets === existing._count.worksheets && c.createdAt > existing.createdAt)
+    ) {
+      byKey.set(key, c);
     }
   }
-  const children = Array.from(byName.values());
+  const children = Array.from(byKey.values());
+  console.log(
+    'daily-email children:',
+    children.map((c) => `${c.name}=${c.id} (user ${c.userId})`).join(', ')
+  );
 
   if (children.length === 0) {
     return { status: 200, body: { ok: true, message: 'No children to generate for' } };
@@ -175,7 +192,8 @@ export async function GET(request: NextRequest) {
     // generating worksheets or sending email. Safe to hit for diagnostics.
     if (request.nextUrl.searchParams.get('dryRun')) {
       const allChildren = await prisma.child.findMany({
-        select: { id: true, name: true, grade: true, emailEnabled: true },
+        where: isSaas ? undefined : { userId: PERSONAL_USER_ID },
+        select: { id: true, name: true, grade: true, emailEnabled: true, userId: true },
         orderBy: { grade: 'desc' },
       });
       return NextResponse.json({
