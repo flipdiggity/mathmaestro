@@ -7,8 +7,7 @@ import { grade56Curriculum } from './districts/tx/eanes-isd/grade-6';
 import { grade7Curriculum } from './districts/tx/eanes-isd/grade-7';
 import { grade8Curriculum } from './districts/tx/eanes-isd/grade-8';
 import { grade9Algebra1Curriculum } from './districts/tx/eanes-isd/grade-9-algebra1';
-// TEMP-STUB-GEOMETRY import { grade10GeometryCurriculum } from './districts/tx/eanes-isd/grade-10-geometry';
-const grade10GeometryCurriculum = { grade: 10, label: 'Geometry (Honors)', topics: [] } as GradeCurriculum;
+import { grade10GeometryCurriculum } from './districts/tx/eanes-isd/grade-10-geometry';
 
 export { type CurriculumTopic, type GradeCurriculum } from './types';
 export { type DistrictConfig } from './districts/tx/eanes-isd';

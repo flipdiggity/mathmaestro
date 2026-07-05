@@ -100,9 +100,7 @@ export const COURSES: CoursePreset[] = [
     description:
       'The full Texas Geometry course — proof and logic, transformations, congruence and similarity, right-triangle trig, circles, area/volume and probability. Taken by accelerated Eanes students in 7th-8th grade for high school credit.',
     grades: [10],
-    // Hidden from pickers until the Geometry curriculum content ships
-    // (empty offeredInGrades = never listed; restore [7, 8] when live).
-    offeredInGrades: [],
+    offeredInGrades: [7, 8],
   },
 ];
 
