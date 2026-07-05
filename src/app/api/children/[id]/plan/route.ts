@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
-import { resolveCurriculumForChild, getCourse, COURSES } from '@/lib/curriculum/courses';
+import {
+  resolveCurriculumForChild,
+  getCourse,
+  getCoursesForGrade,
+  engineFieldsForCourse,
+  COURSES,
+} from '@/lib/curriculum/courses';
 import { loadAdaptiveStates } from '@/lib/adaptive';
 import { computePlanStatus } from '@/lib/plan';
 
@@ -40,6 +46,12 @@ export async function GET(
       course: course ? { id: course.id, label: course.label, description: course.description } : null,
       displayGrade: child.displayGrade,
       courses: COURSES.map((c) => ({ id: c.id, label: c.label, description: c.description })),
+      // Courses appropriate for the child's SCHOOL grade (drives pickers).
+      coursesForGrade: getCoursesForGrade(child.displayGrade ?? child.grade).map((c) => ({
+        id: c.id,
+        label: c.label,
+        description: c.description,
+      })),
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -65,7 +77,7 @@ export async function PATCH(
       courseId?: string | null;
     };
 
-    const data: { planEndDate?: Date | null; courseId?: string | null; displayGrade?: number | null; grade?: number; track?: string } = {};
+    const data: { planEndDate?: Date | null; courseId?: string | null; grade?: number; track?: string } = {};
     if (body.planEndDate !== undefined) {
       data.planEndDate = body.planEndDate ? new Date(body.planEndDate) : null;
     }
@@ -74,11 +86,12 @@ export async function PATCH(
         const course = getCourse(body.courseId);
         if (!course) return NextResponse.json({ error: 'Unknown course' }, { status: 400 });
         data.courseId = course.id;
-        // Keep the engine fields consistent with the preset so every legacy
-        // (grade, track) code path agrees with the course resolution.
-        data.grade = course.engineGrade;
-        data.track = course.track;
-        if (course.defaultDisplayGrade != null) data.displayGrade = course.defaultDisplayGrade;
+        // Keep the legacy engine fields consistent with the course so every
+        // (grade, track) code path agrees with the course resolution. The
+        // child's SCHOOL grade (displayGrade) is independent and untouched.
+        const engine = engineFieldsForCourse(course);
+        data.grade = engine.grade;
+        data.track = engine.track;
       } else {
         data.courseId = null;
       }

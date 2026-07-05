@@ -1,86 +1,111 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Course presets — named, district-real course sequences.
+// Course presets — the official Eanes ISD math pathway courses.
 //
-// Eanes ISD math isn't just "grade N": kids place into compacted/accelerated
-// sequences (e.g. a 6th grader taking Math 8 Accelerated = 2nd half of Math 7
-// + all of Math 8). A course preset pins down:
-//   • which topic pool the child works in (via engineGrade + track),
-//   • where the sequence STARTS (floor),
-//   • the child's real school grade for display.
+// Per the district's published pathways (eanesisd.net → Academics → Advanced &
+// Accelerated; 5th-12th Math Pathways Family Handbook):
+//   Standard:    Math 3 → Math 4 → Math 5 → Math 6 → Math 7 → Math 8
+//   Elementary:  Math 5/6 Compacted (5th grade; all 5th+6th TEKS; qualify via
+//                Student Data Matrix in spring of 4th grade)
+//   Middle:      Math 6 Accelerated (6th) → Math 8 Accelerated → Algebra 1
+//                Honors by 8th; Math 7/8 Compacted as the 7th-grade entry point.
+//                Math 8 Accelerated can also be entered by placement exam (80%),
+//                which is how a 6th grader can take it directly.
 //
-// Child.courseId selects a preset; children without one fall back to the
-// legacy (grade, track) resolution + name-keyed start floors.
+// A child's SCHOOL GRADE (displayGrade) and their MATH COURSE are independent
+// choices: the same course (e.g. Math 8 Accelerated) is taken by 6th or 7th
+// graders. `offeredInGrades` says who can pick it; `grades` defines the
+// curriculum pool the engine walks, with an optional start floor.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { CurriculumTopic } from './types';
-import { getTopicsForChild } from './index';
+import { getCurriculum, getTopicsForChild } from './index';
 import { StartFloor, getStartFloor, orderedSequence, floorIndexFor } from './sequencing';
 
 export interface CoursePreset {
   id: string;
   label: string;
   description: string;
-  /** Grade whose curriculum pool drives the engine (may differ from school grade). */
-  engineGrade: number;
-  track: 'standard' | 'accelerated' | 'test-prep';
+  /** Curriculum grades pooled for this course, in teaching order. */
+  grades: number[];
   /** Where in the ordered sequence teaching starts (earlier topics = review only). */
   floor?: StartFloor;
-  /** The school grade a child taking this course is typically in. */
-  defaultDisplayGrade?: number;
+  /** School grades that can take this course (drives the picker). */
+  offeredInGrades: number[];
 }
 
 export const COURSES: CoursePreset[] = [
-  // Standard grade-level courses
+  // ── Standard grade-level courses ──
   ...[3, 4, 5, 6, 7, 8].map((g) => ({
     id: `eanes-g${g}`,
-    label: `Grade ${g} Math`,
-    description: `Full Eanes ISD grade ${g} TEKS sequence in teaching order.`,
-    engineGrade: g,
-    track: 'standard' as const,
-    defaultDisplayGrade: g,
+    label: `Math ${g}`,
+    description: `On-level Eanes ISD Math ${g} — the full grade ${g} TEKS sequence in teaching order.`,
+    grades: [g],
+    offeredInGrades: [g],
   })),
+  // ── Elementary acceleration ──
   {
-    id: 'eanes-m8-accel-g6',
-    label: 'Math 8 Accelerated (6th grade)',
+    id: 'eanes-g4-accel-ready',
+    label: 'Math 4 + Compacted-Math Prep',
     description:
-      'The Eanes compacted sequence for 6th graders who placed into Math 8 Accelerated: second half of Math 7 (proportionality onward), then all of Math 8. Finishes 8th-grade math two years early.',
-    engineGrade: 7,          // pool = grade 7 + grade 8 via accelerated mapping
-    track: 'accelerated',
-    floor: { grade: 7, fromOrder: 17 },
-    defaultDisplayGrade: 6,
+      'All of Math 4 at increasing depth, then Math 5 preview — building toward the Student Data Matrix qualification (spring of 4th grade) for Math 5/6 Compacted.',
+    grades: [4, 5],
+    offeredInGrades: [4],
   },
   {
     id: 'eanes-adv5-compact56',
-    label: 'Advanced Math 5 (compacted 5/6)',
+    label: 'Math 5/6 Compacted',
     description:
-      'Eanes advanced sequence for 5th graders who qualified via the end-of-4th acceleration assessment: all of grade 5 plus grade 6 in one year.',
-    engineGrade: 5,
-    track: 'accelerated',
-    defaultDisplayGrade: 5,
+      'The Eanes 5th-grade acceleration course: all of the 5th AND 6th grade math TEKS in one school year. Entry via the Student Data Matrix.',
+    grades: [5, 6],
+    offeredInGrades: [5],
+  },
+  // ── Middle school pathway ──
+  {
+    id: 'eanes-m6-accel',
+    label: 'Math 6 Accelerated',
+    description:
+      'The Eanes 6th-grade acceleration course: more than a year of standards (Math 6 plus the start of Math 7), preparing for Math 8 Accelerated next year.',
+    grades: [6, 7],
+    offeredInGrades: [6],
   },
   {
-    id: 'eanes-g4-accel-ready',
-    label: 'Grade 4 + Acceleration Test Readiness',
+    id: 'eanes-m8-accel-g6',
+    label: 'Math 8 Accelerated',
     description:
-      'All of grade 4 at increasing depth (through Challenge-level problems), then grade 5 preview — building toward the end-of-4th-grade assessment that places students into Advanced Math 5 (compacted 5/6).',
-    engineGrade: 4,
-    track: 'accelerated',    // pool = grade 4 + grade 5 (preview material)
-    defaultDisplayGrade: 4,
+      'The Eanes accelerated course covering the second half of Math 7 (proportionality onward) plus all of Math 8 — leading to Algebra 1 Honors next year. Entered from Math 6 Accelerated, or directly via the 80% placement exam.',
+    grades: [7, 8],
+    floor: { grade: 7, fromOrder: 17 },
+    offeredInGrades: [6, 7],
   },
   {
-    id: 'eanes-m8-placement-prep',
-    label: 'Math 8 Accelerated Placement Prep',
+    id: 'eanes-m78-compacted',
+    label: 'Math 7/8 Compacted',
     description:
-      'Focused prep for the Math 8 Accelerated placement exam (Math 7 scope, first two nine-weeks emphasized).',
-    engineGrade: 6,
-    track: 'test-prep',
-    defaultDisplayGrade: 5,
+      'The Eanes 7th-grade acceleration entry point: all of Math 7 and Math 8 in one year, leading to Algebra 1 Honors in 8th grade.',
+    grades: [7, 8],
+    offeredInGrades: [7],
   },
 ];
 
 export function getCourse(courseId: string | null | undefined): CoursePreset | undefined {
   if (!courseId) return undefined;
   return COURSES.find((c) => c.id === courseId);
+}
+
+/** Courses a child in a given school grade can take (standard first). */
+export function getCoursesForGrade(schoolGrade: number): CoursePreset[] {
+  return COURSES.filter((c) => c.offeredInGrades.includes(schoolGrade));
+}
+
+/**
+ * Legacy engine fields kept consistent with a course, so every code path that
+ * still reads (grade, track) — diagnostics, old routes — agrees with it.
+ */
+export function engineFieldsForCourse(course: CoursePreset): { grade: number; track: string } {
+  return {
+    grade: course.grades[0],
+    track: course.grades.length > 1 ? 'accelerated' : 'standard',
+  };
 }
 
 export interface ChildCurriculumRef {
@@ -107,10 +132,16 @@ export interface ResolvedCurriculum {
  */
 export function resolveCurriculumForChild(child: ChildCurriculumRef): ResolvedCurriculum {
   const course = getCourse(child.courseId);
-  const grade = course?.engineGrade ?? child.grade;
-  const track = course?.track ?? child.track;
-  const topics = getTopicsForChild(grade, track, child.state, child.district);
+  if (course) {
+    const topics = course.grades.flatMap(
+      (g) => getCurriculum(g, child.state, child.district)?.topics ?? []
+    );
+    const seq = orderedSequence(topics);
+    const floorIndex = course.floor ? floorIndexFor(seq, course.floor) : 0;
+    return { topics, seq, floorIndex, course };
+  }
+  const topics = getTopicsForChild(child.grade, child.track, child.state, child.district);
   const seq = orderedSequence(topics);
-  const floor = course?.floor ?? getStartFloor(child.name, grade);
-  return { topics, seq, floorIndex: floorIndexFor(seq, floor), course };
+  const floor = getStartFloor(child.name, child.grade);
+  return { topics, seq, floorIndex: floorIndexFor(seq, floor) };
 }

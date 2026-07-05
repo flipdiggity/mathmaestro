@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
+import { getCourse, engineFieldsForCourse } from '@/lib/curriculum/courses';
 
 export async function PUT(
   request: NextRequest,
@@ -17,12 +18,22 @@ export async function PUT(
     const body = await request.json();
     const { name, grade, track, state, district, targetTestDate, emailEnabled, courseId, displayGrade, planEndDate } = body;
 
+    // A course choice keeps the legacy engine fields (grade, track) in sync so
+    // every code path agrees with the course's curriculum pool. displayGrade
+    // (the school grade) is independent of the course.
+    const course = courseId ? getCourse(courseId) : undefined;
+    if (courseId && !course) {
+      return NextResponse.json({ error: 'Unknown course' }, { status: 400 });
+    }
+    const engine = course ? engineFieldsForCourse(course) : null;
+
     const updated = await prisma.child.update({
       where: { id: params.id },
       data: {
         ...(name !== undefined && { name }),
-        ...(grade !== undefined && { grade }),
-        ...(track !== undefined && { track }),
+        ...(grade !== undefined && !engine && { grade }),
+        ...(track !== undefined && !engine && { track }),
+        ...(engine && { grade: engine.grade, track: engine.track }),
         ...(state !== undefined && { state }),
         ...(district !== undefined && { district }),
         ...(typeof emailEnabled === 'boolean' && { emailEnabled }),

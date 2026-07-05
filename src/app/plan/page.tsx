@@ -47,7 +47,15 @@ function PlanStatusCard({ childId, childName }: { childId: string; childName: st
       const data = await res.json();
       setPlan(data.plan ?? null);
       setCourse(data.course ?? null);
-      setCourses(data.courses ?? []);
+      // Offer the courses for this child's school grade, and always include
+      // their current course (placement-exam kids take courses "off-grade").
+      const forGrade: CourseInfo[] = data.coursesForGrade ?? data.courses ?? [];
+      const current: CourseInfo | null = data.course ?? null;
+      setCourses(
+        current && !forGrade.some((c: CourseInfo) => c.id === current.id)
+          ? [...forGrade, current]
+          : forGrade
+      );
     } finally {
       setLoading(false);
     }

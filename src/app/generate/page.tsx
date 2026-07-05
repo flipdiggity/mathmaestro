@@ -41,6 +41,19 @@ interface Child {
   name: string;
   grade: number;
   track: string;
+  displayGrade?: number | null;
+}
+
+interface CourseOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
+interface ChildCourseInfo {
+  course: CourseOption | null;
+  coursesForGrade: CourseOption[];
+  displayGrade: number | null;
 }
 
 interface CurriculumTopic {
@@ -137,11 +150,12 @@ function GeneratePageInner() {
         const res = await fetch('/api/children');
         const data = await res.json();
         const list: Child[] = (data.children ?? []).map(
-          (c: { id: string; name: string; grade: number; track?: string }) => ({
+          (c: { id: string; name: string; grade: number; track?: string; displayGrade?: number | null }) => ({
             id: c.id,
             name: c.name,
             grade: c.grade,
             track: c.track ?? 'standard',
+            displayGrade: c.displayGrade,
           })
         );
         setChildren(list);
@@ -389,27 +403,72 @@ function GeneratePageInner() {
   }
 
   // ------------------------------------------------------------------
-  // Change a child's pace (standard <-> accelerated). Accelerated pulls in the
-  // next grade's topics, so it persists on the child and refetches the topic list.
+  // School grade + Eanes math course (independent choices — the same course,
+  // e.g. Math 8 Accelerated, is taken by 6th or 7th graders). Changing either
+  // persists on the child and refetches the topic list + course options.
   // ------------------------------------------------------------------
-  const [savingPace, setSavingPace] = useState(false);
-  async function handlePaceChange(track: string) {
+  const [courseInfo, setCourseInfo] = useState<ChildCourseInfo | null>(null);
+  const [savingCourse, setSavingCourse] = useState(false);
+
+  const fetchCourseInfo = useCallback(async (childId: string) => {
+    try {
+      const res = await fetch(`/api/children/${childId}/plan`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setCourseInfo({
+        course: data.course ?? null,
+        coursesForGrade: data.coursesForGrade ?? [],
+        displayGrade: data.displayGrade ?? null,
+      });
+    } catch {
+      /* course card just stays hidden */
+    }
+  }, []);
+
+  useEffect(() => {
+    setCourseInfo(null);
+    if (selectedChildId) fetchCourseInfo(selectedChildId);
+  }, [selectedChildId, fetchCourseInfo]);
+
+  async function handleSchoolGradeChange(gradeStr: string) {
     if (!selectedChildId) return;
-    setSavingPace(true);
+    setSavingCourse(true);
     setError(null);
     try {
       const res = await fetch(`/api/children/${selectedChildId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ track }),
+        body: JSON.stringify({ displayGrade: Number(gradeStr) }),
       });
-      if (!res.ok) throw new Error('Could not update pace');
-      setChildren((prev) => prev.map((c) => (c.id === selectedChildId ? { ...c, track } : c)));
+      if (!res.ok) throw new Error('Could not update grade');
+      setChildren((prev) =>
+        prev.map((c) => (c.id === selectedChildId ? { ...c, displayGrade: Number(gradeStr) } : c))
+      );
+      await fetchCourseInfo(selectedChildId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update grade');
+    } finally {
+      setSavingCourse(false);
+    }
+  }
+
+  async function handleCourseChange(courseId: string) {
+    if (!selectedChildId) return;
+    setSavingCourse(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/children/${selectedChildId}/plan`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId }),
+      });
+      if (!res.ok) throw new Error('Could not update course');
+      await fetchCourseInfo(selectedChildId);
       fetchTopics(selectedChildId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not update pace');
+      setError(e instanceof Error ? e.message : 'Could not update course');
     } finally {
-      setSavingPace(false);
+      setSavingCourse(false);
     }
   }
 
@@ -769,7 +828,7 @@ function GeneratePageInner() {
                 <SelectContent>
                   {children.map((child) => (
                     <SelectItem key={child.id} value={child.id}>
-                      {child.name} &mdash; Grade {child.grade}
+                      {child.name} &mdash; Grade {child.displayGrade ?? child.grade}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -777,29 +836,60 @@ function GeneratePageInner() {
             )}
 
             {selectedChild && (
-              <div className="mt-4">
-                <p className="text-sm font-medium mb-1">Pace</p>
-                <Select
-                  value={selectedChild.track === 'accelerated' ? 'accelerated' : 'standard'}
-                  onValueChange={handlePaceChange}
-                  disabled={savingPace}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">On grade level (Grade {selectedChild.grade})</SelectItem>
-                    <SelectItem value="accelerated">
-                      Accelerated (adds Grade {selectedChild.grade + 1} material)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {savingPace
+              <div className="mt-4 grid gap-3 sm:grid-cols-[130px_1fr]">
+                <div>
+                  <p className="text-sm font-medium mb-1">School grade</p>
+                  <Select
+                    value={String(selectedChild.displayGrade ?? selectedChild.grade)}
+                    onValueChange={handleSchoolGradeChange}
+                    disabled={savingCourse}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[3, 4, 5, 6, 7, 8].map((g) => (
+                        <SelectItem key={g} value={String(g)}>
+                          Grade {g}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Math course (Eanes pathway)</p>
+                  <Select
+                    value={courseInfo?.course?.id ?? ''}
+                    onValueChange={handleCourseChange}
+                    disabled={savingCourse || !courseInfo}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={courseInfo ? 'Choose a course…' : 'Loading…'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(courseInfo?.coursesForGrade ?? []).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                      {/* Keep the current course selectable even if it isn't
+                          usually offered in this school grade (e.g. Math 8
+                          Accelerated taken by a 6th grader via placement). */}
+                      {courseInfo?.course &&
+                        !courseInfo.coursesForGrade.some((c) => c.id === courseInfo.course!.id) && (
+                          <SelectItem value={courseInfo.course.id}>
+                            {courseInfo.course.label}
+                          </SelectItem>
+                        )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                  {savingCourse
                     ? 'Updating…'
-                    : selectedChild.track === 'accelerated'
-                      ? `${selectedChild.name} is on the accelerated track — worksheets mix in next-grade topics.`
-                      : `Switch to accelerated if this is too easy — it pulls in Grade ${selectedChild.grade + 1} topics.`}
+                    : courseInfo?.course
+                      ? courseInfo.course.description
+                      : 'Pick the course their school placed them in — worksheets follow that sequence.'}
                 </p>
               </div>
             )}
