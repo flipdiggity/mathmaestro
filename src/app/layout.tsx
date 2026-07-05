@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { MobileNav } from "@/components/nav/mobile-nav";
 import { SmartLink } from "@/components/nav/smart-link";
+import { UpdateWatcher } from "@/components/update-watcher";
 import { isSaas } from "@/lib/mode";
 import "./globals.css";
 
@@ -124,6 +125,8 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
         {children}
+        {/* Force-refresh any open/cached page when a new build is deployed. */}
+        <UpdateWatcher />
       </body>
     </html>
   );

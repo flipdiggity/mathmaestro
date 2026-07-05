@@ -6,7 +6,8 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  return NextResponse.json({
+  return NextResponse.json(
+    {
     commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
     commitMessage: process.env.VERCEL_GIT_COMMIT_MESSAGE ?? null,
     branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
@@ -20,6 +21,10 @@ export async function GET() {
       anthropicKey: Boolean(process.env.ANTHROPIC_API_KEY),
       appMode: process.env.NEXT_PUBLIC_APP_MODE ?? 'personal',
     },
-    serverTimeUtc: new Date().toISOString(),
-  });
+      serverTimeUtc: new Date().toISOString(),
+    },
+    // The UpdateWatcher polls this to detect new deploys — it must never be
+    // served from any HTTP/CDN cache.
+    { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+  );
 }
