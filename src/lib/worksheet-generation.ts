@@ -262,12 +262,26 @@ export async function generateAdaptiveWorksheet(
   const verifiedQuestions = verifyWorksheetAnswers(parsed.questions);
 
   const topicById = new Map<string, CurriculumTopic>();
-  for (const s of selectionList) topicById.set(s.topic.id, s.topic);
+  const topicByName = new Map<string, CurriculumTopic>();
+  for (const s of selectionList) {
+    topicById.set(s.topic.id, s.topic);
+    topicByName.set(s.topic.name.trim().toLowerCase(), s.topic);
+  }
   const knownFormats = new Set<string>(QUESTION_FORMATS);
 
+  // The model sometimes mangles topic ids ("7.7A-linear-rep" instead of the
+  // real id). Remap to the real selection topic — by id, then by name — so
+  // grading mastery writes and per-question video help stay keyed correctly.
+  const resolveTopic = (q: { topicId: string; topicName?: string }): CurriculumTopic | undefined =>
+    topicById.get(q.topicId) ?? topicByName.get((q.topicName ?? '').trim().toLowerCase());
+
   const questions: Question[] = verifiedQuestions.map((q, idx) => {
+    const topicMeta = resolveTopic(q);
+    if (topicMeta) {
+      q.topicId = topicMeta.id;
+      q.topicName = topicMeta.name;
+    }
     const section = q.section || topicReasonMap.get(q.topicId) || 'new';
-    const topicMeta = topicById.get(q.topicId);
     const { figure, expectedAnswer } = sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer);
     return {
       number: idx + 1,

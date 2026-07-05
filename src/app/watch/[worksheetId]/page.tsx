@@ -1,15 +1,81 @@
 import { notFound } from 'next/navigation';
-import { Clock, ExternalLink, Play } from 'lucide-react';
+import { ExternalLink, Play, Sparkles } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getTopicById, type CurriculumTopic } from '@/lib/curriculum';
 import { getExactVideo, getVideosForTopic } from '@/lib/curriculum/videos';
+import type { Question } from '@/types';
 
 // Always read fresh — this is a public share page reached from a printed QR code.
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Watch first, then work — MathMaestro',
+  title: 'Video help for this worksheet — MathMaestro',
 };
+
+interface VideoRef {
+  videoId: string | null;
+  title: string;
+  url: string;
+  channel: string;
+  minutes?: number;
+}
+
+function videoForTopic(topic: CurriculumTopic): VideoRef {
+  const exact = getExactVideo(topic.id);
+  if (exact) {
+    return {
+      videoId: exact.videoId,
+      title: exact.title,
+      url: exact.url,
+      channel: exact.source === 'Khan Academy' ? 'Khan Academy' : 'YouTube',
+      minutes: exact.minutes,
+    };
+  }
+  const fallback = getVideosForTopic(topic)[0];
+  return {
+    videoId: null,
+    title: fallback?.title ?? topic.name,
+    url: fallback?.url ?? '#',
+    channel: fallback?.source ?? 'YouTube',
+  };
+}
+
+function VideoCard({ video, compact }: { video: VideoRef; compact?: boolean }) {
+  return (
+    <a
+      href={video.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2.5 transition-shadow hover:shadow-md"
+    >
+      <div className="relative shrink-0">
+        {video.videoId ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`}
+            alt=""
+            className={`${compact ? 'h-14 w-24' : 'h-20 w-36'} rounded-md object-cover`}
+          />
+        ) : (
+          <div className={`${compact ? 'h-14 w-24' : 'h-20 w-36'} rounded-md bg-slate-100`} />
+        )}
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600/95 shadow">
+            <Play className="h-3.5 w-3.5 translate-x-px fill-white text-white" />
+          </span>
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-slate-900">{video.title}</p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          {video.channel}
+          {video.minutes != null ? ` · ${video.minutes} min` : ''} · opens on YouTube
+        </p>
+      </div>
+      <ExternalLink className="h-4 w-4 shrink-0 text-slate-300" />
+    </a>
+  );
+}
 
 export default async function WatchPage({
   params,
@@ -25,131 +91,161 @@ export default async function WatchPage({
     notFound();
   }
 
-  // topicIdsJson is a JSON string array of topic ids.
-  let topicIds: string[] = [];
+  let questions: Question[] = [];
   try {
-    const parsed = JSON.parse(worksheet.topicIdsJson);
-    if (Array.isArray(parsed)) {
-      topicIds = parsed.filter((id): id is string => typeof id === 'string');
-    }
+    const parsed = JSON.parse(worksheet.questionsJson);
+    if (Array.isArray(parsed)) questions = parsed as Question[];
   } catch {
-    // Malformed JSON — fall through to the empty state below.
+    // Malformed — fall through to the topic-only view below.
   }
 
-  const topics: CurriculumTopic[] = Array.from(new Set(topicIds))
-    .map((id) => getTopicById(id))
-    .filter((t): t is CurriculumTopic => Boolean(t));
+  // Older sheets can carry model-mangled question topicIds ("7.7A-linear-rep");
+  // the worksheet's topicIdsJson holds the REAL selection ids. Resolve each
+  // question by id first, then by topic-name match against the sheet's topics.
+  let sheetTopicIds: string[] = [];
+  try {
+    const parsed = JSON.parse(worksheet.topicIdsJson);
+    if (Array.isArray(parsed)) sheetTopicIds = parsed.filter((x): x is string => typeof x === 'string');
+  } catch {
+    // ignore
+  }
+  const sheetTopicsByName = new Map<string, CurriculumTopic>();
+  for (const id of sheetTopicIds) {
+    const t = getTopicById(id);
+    if (t) sheetTopicsByName.set(t.name.trim().toLowerCase(), t);
+  }
+  const resolveTopic = (q: Question): CurriculumTopic | undefined =>
+    getTopicById(q.topicId) ?? sheetTopicsByName.get((q.topicName ?? '').trim().toLowerCase());
 
-  // ONE exact video per topic, in worksheet order — this is the playlist.
-  // Topics without a curated exact video fall back to their best link.
-  const playlist = topics.map((topic) => {
-    const exact = getExactVideo(topic.id);
-    const fallback = getVideosForTopic(topic)[0];
-    return {
-      topic,
-      videoId: exact?.videoId ?? null,
-      title: exact?.title ?? fallback?.title ?? topic.name,
-      url: exact ? exact.url : fallback?.url ?? '#',
-      channel: exact ? (exact.source === 'Khan Academy' ? 'Khan Academy' : 'YouTube') : fallback?.source ?? 'YouTube',
-      minutes: exact?.minutes,
-      more: getVideosForTopic(topic).find((v) => v.url !== (exact?.url ?? fallback?.url)),
-    };
+  // ── Group questions by topic, in sheet order ──
+  interface Group {
+    topic: CurriculumTopic;
+    numbers: number[];
+    isNew: boolean;
+    hardest: number;
+  }
+  const groups: Group[] = [];
+  const byTopic = new Map<string, Group>();
+  for (const q of questions) {
+    const topic = resolveTopic(q);
+    if (!topic) continue;
+    let g = byTopic.get(topic.id);
+    if (!g) {
+      g = { topic, numbers: [], isNew: false, hardest: 1 };
+      byTopic.set(topic.id, g);
+      groups.push(g);
+    }
+    g.numbers.push(q.number);
+    if (q.section !== 'review') g.isNew = true;
+    g.hardest = Math.max(g.hardest, q.difficulty || 1);
+  }
+
+  // "Watch before you start" = only the NEW topics (kept short on purpose).
+  const newTopicVideos = groups
+    .filter((g) => g.isNew)
+    .slice(0, 3)
+    .map((g) => ({ g, video: videoForTopic(g.topic) }));
+
+  // Per-question help: each group gets ITS video; hard multi-skill questions
+  // (difficulty >= 3) also surface the topic's prerequisite videos, since
+  // those are the questions that lean on more than one skill.
+  const helpGroups = groups.map((g) => {
+    const primary = videoForTopic(g.topic);
+    const also: Array<{ name: string; video: VideoRef }> = [];
+    if (g.hardest >= 3) {
+      for (const prereqId of (g.topic.prerequisites ?? []).slice(0, 2)) {
+        const prereq = getTopicById(prereqId);
+        const v = prereq ? getExactVideo(prereq.id) : null;
+        if (prereq && v && v.videoId !== primary.videoId) {
+          also.push({
+            name: prereq.name,
+            video: {
+              videoId: v.videoId,
+              title: v.title,
+              url: v.url,
+              channel: v.source === 'Khan Academy' ? 'Khan Academy' : 'YouTube',
+              minutes: v.minutes,
+            },
+          });
+        }
+      }
+    }
+    return { ...g, primary, also };
   });
-  const totalMinutes = playlist.reduce((s, p) => s + (p.minutes ?? 0), 0);
+
   const firstName = worksheet.child.name.split(' ')[0];
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8">
-      <div className="mx-auto max-w-xl space-y-5">
+      <div className="mx-auto max-w-xl space-y-6">
         <header>
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
-            MathMaestro · Watch first
+            MathMaestro · Video help
           </p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900">
-            {firstName}, watch these {playlist.length} videos — then start
+            {firstName}&rsquo;s videos for this sheet
           </h1>
-          <p className="mt-1.5 text-sm text-slate-600">
-            {totalMinutes > 0 ? `About ${totalMinutes} minutes total. ` : ''}
-            They match today&rsquo;s worksheet exactly:{' '}
-            <span className="font-medium text-slate-800">{worksheet.title}</span>
-          </p>
+          <p className="mt-1.5 text-sm text-slate-600">{worksheet.title}</p>
         </header>
 
-        {playlist.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-            No videos found for this worksheet&rsquo;s topics.
-          </div>
-        ) : (
-          <ol className="space-y-3">
-            {playlist.map((item, i) => (
-              <li key={item.topic.id}>
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-                >
-                  {item.videoId && (
-                    <div className="relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`https://img.youtube.com/vi/${item.videoId}/mqdefault.jpg`}
-                        alt=""
-                        className="h-44 w-full object-cover"
-                      />
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600/95 shadow-lg">
-                          <Play className="h-6 w-6 translate-x-0.5 fill-white text-white" />
-                        </span>
-                      </span>
-                      {item.minutes != null && (
-                        <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white">
-                          {item.minutes} min
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <div className="flex items-start gap-3 p-4">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        {item.topic.name}
-                      </p>
-                      <p className="mt-0.5 font-medium text-slate-900">{item.title}</p>
-                      <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
-                        <span>{item.channel} · opens on YouTube</span>
-                        {!item.videoId && item.minutes != null && (
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {item.minutes} min
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-slate-300" />
-                  </div>
-                </a>
-                {item.more && (
-                  <p className="mt-1 pl-4 text-xs text-slate-400">
-                    Still stuck after the video?{' '}
-                    <a
-                      href={item.more.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-500 underline-offset-2 hover:underline"
-                    >
-                      More on {item.more.source}
-                    </a>
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
+        {newTopicVideos.length > 0 && (
+          <section>
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+              <Sparkles className="h-4 w-4 text-indigo-600" />
+              New today — worth watching before you start
+            </h2>
+            <div className="mt-2 space-y-2">
+              {newTopicVideos.map(({ g, video }) => (
+                <VideoCard key={g.topic.id} video={video} />
+              ))}
+            </div>
+          </section>
         )}
 
-        <p className="pt-2 text-center text-xs text-slate-400">
-          Watch in order, then grab a pencil. Good luck, {firstName}! ✏️
+        <section>
+          <h2 className="text-sm font-semibold text-slate-900">
+            Stuck on a question? Find its number here.
+          </h2>
+          <div className="mt-2 space-y-3">
+            {helpGroups.map((g) => (
+              <div
+                key={g.topic.id}
+                className="rounded-xl border border-slate-200 bg-white p-3"
+              >
+                <div className="mb-2 flex flex-wrap items-center gap-1">
+                  {g.numbers.map((n) => (
+                    <span
+                      key={n}
+                      className="flex h-6 min-w-6 items-center justify-center rounded-md bg-indigo-50 px-1 text-xs font-bold text-indigo-700"
+                    >
+                      Q{n}
+                    </span>
+                  ))}
+                  <span className="ml-1 text-xs text-slate-500">{g.topic.name}</span>
+                </div>
+                <VideoCard video={g.primary} compact />
+                {g.also.length > 0 && (
+                  <div className="mt-2 space-y-1.5 border-t border-slate-100 pt-2">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                      These questions also use…
+                    </p>
+                    {g.also.map((a) => (
+                      <VideoCard key={a.video.url} video={a.video} compact />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {helpGroups.length === 0 && (
+              <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+                No question data found for this worksheet.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <p className="pt-1 text-center text-xs text-slate-400">
+          Watch just what you need, then back to the pencil. You&rsquo;ve got this, {firstName}! ✏️
         </p>
       </div>
     </main>

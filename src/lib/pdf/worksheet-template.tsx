@@ -2023,20 +2023,24 @@ function WatchFirstBox({ watch }: { watch: WatchBlock }) {
   return (
     <View style={styles.watchBox}>
       <View style={styles.watchLeft}>
-        <Text style={styles.watchHeader}>Watch first — 5-10 minutes, then start</Text>
-        {watch.videos.slice(0, 4).map((v, i) => (
+        <Text style={styles.watchHeader}>New today — watch these two first (optional)</Text>
+        {watch.videos.slice(0, 2).map((v, i) => (
           <Text key={i} style={styles.watchRow}>
             • {v.topicName}: {v.title}
             {v.minutes ? ` (${v.minutes} min)` : ''}
           </Text>
         ))}
-        {watch.url ? <Text style={styles.watchUrl}>All links: {watch.url}</Text> : null}
+        <Text style={styles.watchRow}>
+          Stuck on ANY question? Scan the code — every question number has its own help
+          video there.
+        </Text>
+        {watch.url ? <Text style={styles.watchUrl}>{watch.url}</Text> : null}
       </View>
       {watch.qrDataUrl ? (
         <View>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image src={watch.qrDataUrl} style={styles.watchQr} />
-          <Text style={styles.watchQrLabel}>Scan to watch</Text>
+          <Text style={styles.watchQrLabel}>Scan for help videos</Text>
         </View>
       ) : null}
     </View>
