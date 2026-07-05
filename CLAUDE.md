@@ -14,7 +14,7 @@ AI-powered math worksheet generator. Kids get personalized printed worksheets al
 - **saas** — Clerk auth, Stripe pay-per-use (5 free generates + 5 free grades; `ADMIN_EMAILS` bypass), public landing page (rewritten July 2026: Eanes-specific marketing at `src/components/landing/landing-page.tsx`), `/onboarding`, per-family daily emails, support center (`/support` + `POST /api/support` → SupportTicket), `/terms`, `/privacy`. To flip: re-add CLERK_*/STRIPE_*/ADMIN_EMAILS/NEXT_PUBLIC_SUPPORT_EMAIL env vars on Vercel, set the flag, redeploy.
 
 ## Deployment
-- `git push` on `summer-rebuild` → Vercel auto-deploys production (~1 min). That is the ONLY deploy path; `npx vercel --prod` has an expired token.
+- `git push` on `main` → Vercel auto-deploys production (~1 min) — production branch switched from summer-rebuild to main on July 5, 2026. Other branches get preview deploys. The Vercel CLI is authenticated again (July 2026); `gh` is authenticated as flipdiggity.
 - Verify with `GET /api/version` (commit SHA, branch, env-readiness booleans) or the Vercel Deployments page.
 - `npm run db:push` only when prisma/schema.prisma changes — and it must land BEFORE deploying code that reads new columns (Prisma selects all scalar fields; missing columns = runtime 500s).
 
@@ -45,8 +45,8 @@ The old engine only adapted via photo-graded mastery; almost nothing was graded,
 - `/admin` console: overview cards (incl. cron-health chip), Users (credits + refunds), Tickets, Audit log, Maintenance tabs. APIs under `/api/admin/*` (tickets, refund, audit, overview). Refunds write negative-cost UsageRecords of the refunded type (sign-counting in `billing.ts # getUsageCounts`); optional Stripe refund when env present. Everything audit-logged (`AuditLog` model).
 - Support: `POST /api/support` (public) → `SupportTicket` + best-effort email to `SUPPORT_INBOX_EMAIL || DAILY_EMAIL_TO`.
 
-## Known issues / state (July 4, 2026)
-- The daily cron works (fixed pre-July; sheets exist through Jul 3). The "cron never wrote a worksheet" note from June 10 is obsolete.
-- PENDING at end of July 4 session: `npm run db:push` (additive: Child.courseId/displayGrade/planEndDate, TopicMastery adaptive columns, AuditLog, SupportTicket) then `npx tsx scripts/setup-summer-plans.ts` (sets both kids' courses + Aug-12 plan), then push to deploy. Push code only AFTER the DB migration.
+## Known issues / state (July 5, 2026)
+- The daily cron works (sheets exist through Jul 3; new engine live since Jul 5). The "cron never wrote a worksheet" note from June 10 is obsolete.
+- July 5: schema migrated (Child.courseId/displayGrade/planEndDate, TopicMastery adaptive columns, AuditLog, SupportTicket), kids' courses + Aug-12 plans set via `scripts/setup-summer-plans.ts`, engine v2 deployed and verified with a live generation for Eliana.
 - Old SaaS-era duplicate children (cmm… ids under felipefernandes@hey.com) still in DB; harmless (cron scoped to local-felipe), dedupe via admin Maintenance tab.
 - Grading old worksheets (pre-curriculum-change) writes mastery rows under old topic IDs; harmless (filtered), cleanup endpoint exists.
