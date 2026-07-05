@@ -7,6 +7,7 @@ import { getTopicById } from '@/lib/curriculum';
 import { buildWatchInput } from '@/lib/curriculum/videos';
 import { Question } from '@/types';
 import { worksheetFilename } from '@/lib/utils';
+import { sanitizeStudentDrawFigure } from '@/lib/student-figure';
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +20,12 @@ export async function GET(
       return NextResponse.json({ error: 'Worksheet not found' }, { status: 404 });
     }
 
-    const questions: Question[] = JSON.parse(worksheet.questionsJson);
+    // Re-sanitize on render: sheets stored before the caption-leak fix can
+    // still carry answers in figure captions/labels (idempotent for new ones).
+    const questions: Question[] = (JSON.parse(worksheet.questionsJson) as Question[]).map((q) => {
+      const { figure, expectedAnswer } = sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer);
+      return { ...q, figure, expectedAnswer };
+    });
 
     // Build the "Before you start" review + "Watch first" blocks from the topics.
     let topicReviews: TopicReviewRef[] = [];

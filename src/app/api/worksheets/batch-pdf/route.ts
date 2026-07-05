@@ -6,6 +6,7 @@ import { getTopicById } from '@/lib/curriculum';
 import { buildWatchInput } from '@/lib/curriculum/videos';
 import { Question } from '@/types';
 import { worksheetFilename } from '@/lib/utils';
+import { sanitizeStudentDrawFigure } from '@/lib/student-figure';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +46,11 @@ export async function POST(request: NextRequest) {
       }
       return {
         title: ws.title,
-        questions: JSON.parse(ws.questionsJson) as Question[],
+        // Re-sanitize on render (caption-leak fix for previously stored sheets).
+        questions: (JSON.parse(ws.questionsJson) as Question[]).map((q) => {
+          const { figure, expectedAnswer } = sanitizeStudentDrawFigure(q.question, q.figure, q.expectedAnswer);
+          return { ...q, figure, expectedAnswer };
+        }),
         topicReviews,
         watch,
       };
