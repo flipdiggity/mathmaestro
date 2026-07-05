@@ -1,0 +1,1490 @@
+{
+ "3.nbt.1": {
+  "id": "T5Qf0qSSJFI",
+  "title": "Math Antics - Place Value",
+  "channel": "mathantics",
+  "seconds": 566
+ },
+ "3.nbt.2": {
+  "id": "TOrcUx0wDDQ",
+  "title": "Comparing Whole Numbers - Math Antics Extras",
+  "channel": "mathantics",
+  "seconds": 275
+ },
+ "3.nbt.3": {
+  "id": "mAvuom42NyY",
+  "title": "Math Antics - Multi-Digit Addition",
+  "channel": "mathantics",
+  "seconds": 389
+ },
+ "3.nbt.4": {
+  "id": "Y6M89-6106I",
+  "title": "Math Antics - Multi-Digit Subtraction",
+  "channel": "mathantics",
+  "seconds": 417
+ },
+ "3.nbt.5": {
+  "id": "FJ5qLWP3Fqo",
+  "title": "Math Antics - Multi-Digit Multiplication Pt 1",
+  "channel": "mathantics",
+  "seconds": 365
+ },
+ "3.nbt.6": {
+  "id": "KGMf314LUc0",
+  "title": "Math Antics - Basic Division",
+  "channel": "mathantics",
+  "seconds": 598
+ },
+ "3.nbt.7": {
+  "id": "fd-E18EqSVk",
+  "title": "Math Antics - Rounding",
+  "channel": "mathantics",
+  "seconds": 641
+ },
+ "3.frac.1": {
+  "id": "pWJzqTYS8no",
+  "title": "Fractions on the Number Line - Math Antics",
+  "channel": "mathantics",
+  "seconds": 767
+ },
+ "3.frac.2": {
+  "id": "KNdUJQ_qd4U",
+  "title": "Math Antics - Comparing Fractions",
+  "channel": "mathantics",
+  "seconds": 391
+ },
+ "3.frac.3": {
+  "id": "CA9XLJpQp3c",
+  "title": "Math Antics - Fractions Are Parts",
+  "channel": "mathantics",
+  "seconds": 316
+ },
+ "3.alg.1": {
+  "id": "vV7C7bXm4VI",
+  "title": "Math Antics - Number Patterns",
+  "channel": "mathantics",
+  "seconds": 833
+ },
+ "3.alg.2": {
+  "id": "52tpYl2tTqk",
+  "title": "Algebra Basics: What Are Functions? - Math Antics",
+  "channel": "mathantics",
+  "seconds": 694
+ },
+ "3.alg.3": {
+  "id": "l3XzepN03KQ",
+  "title": "Algebra Basics: Solving Basic Equations Part 1 - Math Antics",
+  "channel": "mathantics",
+  "seconds": 668
+ },
+ "3.geo.1": {
+  "id": "IaoZhhx_I9s",
+  "title": "Math Antics - Polygons",
+  "channel": "mathantics",
+  "seconds": 447
+ },
+ "3.geo.2": {
+  "id": "xCdxURXMdFY",
+  "title": "Math Antics - Area",
+  "channel": "mathantics",
+  "seconds": 626
+ },
+ "3.geo.3": {
+  "id": "AAY1bsazcgM",
+  "title": "Math Antics - Perimeter",
+  "channel": "mathantics",
+  "seconds": 449
+ },
+ "3.meas.1": {
+  "id": "ZNX-a-5jGeM",
+  "title": "Math Antics - Intro to the Metric System",
+  "channel": "mathantics",
+  "seconds": 651
+ },
+ "3.meas.2": {
+  "id": "QU-XUmujbuM",
+  "title": "Math Antics - Telling Time",
+  "channel": "mathantics",
+  "seconds": 871
+ },
+ "3.meas.3": {
+  "id": "qJwecTgce6c",
+  "title": "Math Antics - Volume",
+  "channel": "mathantics",
+  "seconds": 756
+ },
+ "3.data.1": {
+  "id": "hcgThf5mv38",
+  "title": "Math Antics - Data And Graphs",
+  "channel": "mathantics",
+  "seconds": 759
+ },
+ "3.data.2": {
+  "id": "hcgThf5mv38",
+  "title": "Math Antics - Data And Graphs",
+  "channel": "mathantics",
+  "seconds": 759
+ },
+ "4.nbt.1": {
+  "id": "T5Qf0qSSJFI",
+  "title": "Math Antics - Place Value",
+  "channel": "mathantics",
+  "seconds": 566
+ },
+ "4.nbt.2": {
+  "id": "TOrcUx0wDDQ",
+  "title": "Comparing Whole Numbers - Math Antics Extras",
+  "channel": "mathantics",
+  "seconds": 275
+ },
+ "4.nbt.3": {
+  "id": "fd-E18EqSVk",
+  "title": "Math Antics - Rounding",
+  "channel": "mathantics",
+  "seconds": 641
+ },
+ "4.nbt.4": {
+  "id": "_BgblvF90UE",
+  "title": "Math Antics - Adding & Subtracting Integers",
+  "channel": "mathantics",
+  "seconds": 683
+ },
+ "4.nbt.5": {
+  "id": "FJ5qLWP3Fqo",
+  "title": "Math Antics - Multi-Digit Multiplication Pt 1",
+  "channel": "mathantics",
+  "seconds": 365
+ },
+ "4.nbt.6": {
+  "id": "RVYwunbpMHA",
+  "title": "Math Antics - Multi-Digit Multiplication Pt 2",
+  "channel": "mathantics",
+  "seconds": 504
+ },
+ "4.nbt.7": {
+  "id": "KGMf314LUc0",
+  "title": "Math Antics - Basic Division",
+  "channel": "mathantics",
+  "seconds": 598
+ },
+ "4.nbt.8": {
+  "id": "fd-E18EqSVk",
+  "title": "Math Antics - Rounding",
+  "channel": "mathantics",
+  "seconds": 641
+ },
+ "4.nf.1": {
+  "id": "kmVfZ9o-2gg",
+  "title": "Math Antics - Percents And Equivalent Fractions",
+  "channel": "mathantics",
+  "seconds": 517
+ },
+ "4.nf.2": {
+  "id": "KNdUJQ_qd4U",
+  "title": "Math Antics - Comparing Fractions",
+  "channel": "mathantics",
+  "seconds": 391
+ },
+ "4.nf.3": {
+  "id": "5juto2ze8Lg",
+  "title": "Math Antics - Adding and Subtracting Fractions",
+  "channel": "mathantics",
+  "seconds": 262
+ },
+ "4.nf.4": {
+  "id": "_jcW-ZgpRbM",
+  "title": "Math Antics - Converting Base-10 Fractions",
+  "channel": "mathantics",
+  "seconds": 419
+ },
+ "4.nf.5": {
+  "id": "rALUd3wW29s",
+  "title": "Comparing Decimal Numbers - Math Antics Extras",
+  "channel": "mathantics",
+  "seconds": 304
+ },
+ "4.oa.1": {
+  "id": "LDIiYKYvvdA",
+  "title": "Algebra Basics: Solving 2-Step Equations - Math Antics",
+  "channel": "mathantics",
+  "seconds": 629
+ },
+ "4.oa.2": {
+  "id": "l3XzepN03KQ",
+  "title": "Algebra Basics: Solving Basic Equations Part 1 - Math Antics",
+  "channel": "mathantics",
+  "seconds": 668
+ },
+ "4.oa.3": {
+  "id": "vV7C7bXm4VI",
+  "title": "Math Antics - Number Patterns",
+  "channel": "mathantics",
+  "seconds": 833
+ },
+ "4.g.1": {
+  "id": "k5etrWdIY6o",
+  "title": "Math Antics - Points, Lines, & Planes",
+  "channel": "mathantics",
+  "seconds": 474
+ },
+ "4.g.2": {
+  "id": "_n3KZR1DSEo",
+  "title": "Math Antics - Angles & Degrees",
+  "channel": "mathantics",
+  "seconds": 557
+ },
+ "4.g.3": {
+  "id": "DGKwdHMiqCg",
+  "title": "Math Antics - Angle Basics",
+  "channel": "mathantics",
+  "seconds": 466
+ },
+ "4.md.1": {
+  "id": "ZNX-a-5jGeM",
+  "title": "Math Antics - Intro to the Metric System",
+  "channel": "mathantics",
+  "seconds": 651
+ },
+ "4.md.2": {
+  "id": "AAY1bsazcgM",
+  "title": "Math Antics - Perimeter",
+  "channel": "mathantics",
+  "seconds": 449
+ },
+ "4.md.3": {
+  "id": "QU-XUmujbuM",
+  "title": "Math Antics - Telling Time",
+  "channel": "mathantics",
+  "seconds": 871
+ },
+ "4.da.1": {
+  "id": "hcgThf5mv38",
+  "title": "Math Antics - Data And Graphs",
+  "channel": "mathantics",
+  "seconds": 759
+ },
+ "4.da.2": {
+  "id": "hcgThf5mv38",
+  "title": "Math Antics - Data And Graphs",
+  "channel": "mathantics",
+  "seconds": 759
+ },
+ "5.dc.1": {
+  "id": "T5Qf0qSSJFI",
+  "title": "Math Antics - Place Value",
+  "channel": "mathantics",
+  "seconds": 566
+ },
+ "5.dc.2": {
+  "id": "rALUd3wW29s",
+  "title": "Comparing Decimal Numbers - Math Antics Extras",
+  "channel": "mathantics",
+  "seconds": 304
+ },
+ "5.dc.3": {
+  "id": "fd-E18EqSVk",
+  "title": "Math Antics - Rounding",
+  "channel": "mathantics",
+  "seconds": 641
+ },
+ "5.ns.1": {
+  "id": "XGbOiYhHY2c",
+  "title": "Math Antics - Prime Factorization",
+  "channel": "mathantics",
+  "seconds": 400
+ },
+ "5.op.1": {
+  "id": "dAgfnK528RA",
+  "title": "Math Antics - Order Of Operations",
+  "channel": "mathantics",
+  "seconds": 580
+ },
+ "5.op.2": {
+  "id": "FJ5qLWP3Fqo",
+  "title": "Math Antics - Multi-Digit Multiplication Pt 1",
+  "channel": "mathantics",
+  "seconds": 365
+ },
+ "5.op.3": {
+  "id": "LGqBQrUYua4",
+  "title": "Math Antics - Long Division",
+  "channel": "mathantics",
+  "seconds": 677
+ },
+ "5.op.4": {
+  "id": "dAgfnK528RA",
+  "title": "Math Antics - Order Of Operations",
+  "channel": "mathantics",
+  "seconds": 580
+ },
+ "5.dc.4": {
+  "id": "kwh4SD1ToFc",
+  "title": "Math Antics - Decimal Arithmetic",
+  "channel": "mathantics",
+  "seconds": 735
+ },
+ "5.dc.5": {
+  "id": "kwh4SD1ToFc",
+  "title": "Math Antics - Decimal Arithmetic",
+  "channel": "mathantics",
+  "seconds": 735
+ },
+ "5.fr.1": {
+  "id": "5juto2ze8Lg",
+  "title": "Math Antics - Adding and Subtracting Fractions",
+  "channel": "mathantics",
+  "seconds": 262
+ },
+ "5.fr.2": {
+  "id": "qmfXyR7Z6Lk",
+  "title": "Math Antics - Multiplying Fractions",
+  "channel": "mathantics",
+  "seconds": 342
+ },
+ "5.fr.3": {
+  "id": "4lkq3DgvmJo",
+  "title": "Math Antics - Dividing Fractions",
+  "channel": "mathantics",
+  "seconds": 313
+ },
+ "5.fr.4": {
+  "id": "4lkq3DgvmJo",
+  "title": "Math Antics - Dividing Fractions",
+  "channel": "mathantics",
+  "seconds": 313
+ },
+ "5.fr.5": {
+  "id": "LDIiYKYvvdA",
+  "title": "Algebra Basics: Solving 2-Step Equations - Math Antics",
+  "channel": "mathantics",
+  "seconds": 629
+ },
+ "5.pa.1": {
+  "id": "vV7C7bXm4VI",
+  "title": "Math Antics - Number Patterns",
+  "channel": "mathantics",
+  "seconds": 833
+ },
+ "5.pa.2": {
+  "id": "vV7C7bXm4VI",
+  "title": "Math Antics - Number Patterns",
+  "channel": "mathantics",
+  "seconds": 833
+ },
+ "5.al.1": {
+  "id": "LDIiYKYvvdA",
+  "title": "Algebra Basics: Solving 2-Step Equations - Math Antics",
+  "channel": "mathantics",
+  "seconds": 629
+ },
+ "5.al.2": {
+  "id": "dAgfnK528RA",
+  "title": "Math Antics - Order Of Operations",
+  "channel": "mathantics",
+  "seconds": 580
+ },
+ "6.ns.1": {
+  "id": "wg4YXMe5ccs",
+  "title": "Irrational Numbers - Math Antics Extras",
+  "channel": "mathantics",
+  "seconds": 325
+ },
+ "6.ns.2": {
+  "id": "KNdUJQ_qd4U",
+  "title": "Math Antics - Comparing Fractions",
+  "channel": "mathantics",
+  "seconds": 391
+ },
+ "6.ns.3": {
+  "id": "BrYy1bgh3Y0",
+  "title": "Math Antics - Absolute Value",
+  "channel": "mathantics",
+  "seconds": 795
+ },
+ "6.ns.4": {
+  "id": "qmfXyR7Z6Lk",
+  "title": "Math Antics - Multiplying Fractions",
+  "channel": "mathantics",
+  "seconds": 342
+ },
+ "6.ns.5": {
+  "id": "kwh4SD1ToFc",
+  "title": "Math Antics - Decimal Arithmetic",
+  "channel": "mathantics",
+  "seconds": 735
+ },
+ "6.rr.1": {
+  "id": "RQ2nYUBVvqI",
+  "title": "Math Antics - Ratios And Rates",
+  "channel": "mathantics",
+  "seconds": 529
+ },
+ "6.rr.2": {
+  "id": "RQ2nYUBVvqI",
+  "title": "Math Antics - Ratios And Rates",
+  "channel": "mathantics",
+  "seconds": 529
+ },
+ "6.rr.3": {
+  "id": "RQ2nYUBVvqI",
+  "title": "Math Antics - Ratios And Rates",
+  "channel": "mathantics",
+  "seconds": 529
+ },
+ "6.rr.4": {
+  "id": "ZNX-a-5jGeM",
+  "title": "Math Antics - Intro to the Metric System",
+  "channel": "mathantics",
+  "seconds": 651
+ },
+ "6.ee.1": {
+  "id": "dAgfnK528RA",
+  "title": "Math Antics - Order Of Operations",
+  "channel": "mathantics",
+  "seconds": 580
+ },
+ "6.ee.2": {
+  "id": "NybHckSEQBI",
+  "title": "Algebra Basics: What Is Algebra? - Math Antics",
+  "channel": "mathantics",
+  "seconds": 727
+ },
+ "6.ee.3": {
+  "id": "v-6MShC82ow",
+  "title": "Algebra Basics: The Distributive Property - Math Antics",
+  "channel": "mathantics",
+  "seconds": 714
+ },
+ "6.ee.4": {
+  "id": "LDIiYKYvvdA",
+  "title": "Algebra Basics: Solving 2-Step Equations - Math Antics",
+  "channel": "mathantics",
+  "seconds": 629
+ },
+ "6.ee.5": {
+  "id": "l3XzepN03KQ",
+  "title": "Algebra Basics: Solving Basic Equations Part 1 - Math Antics",
+  "channel": "mathantics",
+  "seconds": 668
+ },
+ "6.cp.1": {
+  "id": "9Uc62CuQjc4",
+  "title": "Algebra Basics: Graphing On The Coordinate Plane - Math Antics",
+  "channel": "mathantics",
+  "seconds": 614
+ },
+ "6.cp.2": {
+  "id": "rpMu98yRk40",
+  "title": "Algebra Basics: Slope And Distance - Math Antics",
+  "channel": "mathantics",
+  "seconds": 720
+ },
+ "6.pr.1": {
+  "id": "Mst8iZjIpFE",
+  "title": "Math Antics - Fractions and Decimals",
+  "channel": "mathantics",
+  "seconds": 555
+ },
+ "6.pr.2": {
+  "id": "rR95Cbcjzus",
+  "title": "Math Antics - Finding A Percent Of A Number",
+  "channel": "mathantics",
+  "seconds": 452
+ },
+ "6.pr.3": {
+  "id": "rR95Cbcjzus",
+  "title": "Math Antics - Finding A Percent Of A Number",
+  "channel": "mathantics",
+  "seconds": 452
+ },
+ "6.gm.1": {
+  "id": "xCdxURXMdFY",
+  "title": "Math Antics - Area",
+  "channel": "mathantics",
+  "seconds": 626
+ },
+ "6.gm.2": {
+  "id": "qJwecTgce6c",
+  "title": "Math Antics - Volume",
+  "channel": "mathantics",
+  "seconds": 756
+ },
+ "6.gm.3": {
+  "id": "qJwecTgce6c",
+  "title": "Math Antics - Volume",
+  "channel": "mathantics",
+  "seconds": 756
+ },
+ "6.ms.1": {
+  "id": "ZNX-a-5jGeM",
+  "title": "Math Antics - Intro to the Metric System",
+  "channel": "mathantics",
+  "seconds": 651
+ },
+ "6.da.1": {
+  "id": "B1HEzNTGeZ4",
+  "title": "Math Antics - Mean, Median and Mode",
+  "channel": "mathantics",
+  "seconds": 664
+ },
+ "6.da.2": {
+  "id": "hcgThf5mv38",
+  "title": "Math Antics - Data And Graphs",
+  "channel": "mathantics",
+  "seconds": 759
+ },
+ "6.da.3": {
+  "id": "hcgThf5mv38",
+  "title": "Math Antics - Data And Graphs",
+  "channel": "mathantics",
+  "seconds": 759
+ },
+ "7.ns.1": {
+  "id": "joZ3TOTfPkg",
+  "title": "Identifying Rational Numbers",
+  "channel": "Khan Academy",
+  "seconds": 347
+ },
+ "7.ns.2": {
+  "id": "i1i2_9wg6N8",
+  "title": "Ordering rational numbers",
+  "channel": "Khan Academy",
+  "seconds": 253
+ },
+ "7.ns.3": {
+  "id": "-gB1y-PMWfs",
+  "title": "Converting percent to decimal and fraction",
+  "channel": "Khan Academy",
+  "seconds": 212
+ },
+ "7.ns.4": {
+  "id": "y_DweTAEYWk",
+  "title": "Adding and subtracting rational expressions",
+  "channel": "Khan Academy",
+  "seconds": 495
+ },
+ "7.ns.5": {
+  "id": "3GL69IA2q4s",
+  "title": "Multiplying and dividing rational expressions 1",
+  "channel": "Khan Academy",
+  "seconds": 218
+ },
+ "7.ee.1": {
+  "id": "3NHSwiv_pSE",
+  "title": "How to simplify an expression by combining like terms and the distributive prope",
+  "channel": "Khan Academy",
+  "seconds": 247
+ },
+ "7.ee.2": {
+  "id": "zRgnVbh6psI",
+  "title": "Using the distributive property when multiplying",
+  "channel": "Khan Academy",
+  "seconds": 369
+ },
+ "7.ee.3": {
+  "id": "_y_Q3_B2Vh8",
+  "title": "Solving two-step equations",
+  "channel": "Khan Academy",
+  "seconds": 312
+ },
+ "7.ee.4": {
+  "id": "xKH1Evwu150",
+  "title": "Linear equation word problem",
+  "channel": "Khan Academy",
+  "seconds": 359
+ },
+ "7.iq.1": {
+  "id": "unSBFwK881s",
+  "title": "Introduction to graphing inequalities",
+  "channel": "Khan Academy",
+  "seconds": 484
+ },
+ "7.iq.2": {
+  "id": "y7QLay8wrW8",
+  "title": "Solving a two-step inequality",
+  "channel": "Khan Academy",
+  "seconds": 272
+ },
+ "7.pr.1": {
+  "id": "Zm0KaIw-35k",
+  "title": "Solving unit rates problem",
+  "channel": "Khan Academy",
+  "seconds": 151
+ },
+ "7.pr.2": {
+  "id": "qYjiVWwefto",
+  "title": "Introduction to proportional relationships",
+  "channel": "Khan Academy",
+  "seconds": 229
+ },
+ "7.pr.3": {
+  "id": "X2jVap1YgwI",
+  "title": "Growing by a percentage",
+  "channel": "Khan Academy",
+  "seconds": 583
+ },
+ "7.pr.4": {
+  "id": "jb_RwR_Eso4",
+  "title": "Tax, discount and tip examples",
+  "channel": "Khan Academy",
+  "seconds": 348
+ },
+ "7.pr.5": {
+  "id": "79HS3N1IBt8",
+  "title": "Calculating simple & compound interest",
+  "channel": "Khan Academy",
+  "seconds": 394
+ },
+ "7.lr.1": {
+  "id": "rgvysb9emcQ",
+  "title": "Graphs of linear equations",
+  "channel": "Khan Academy",
+  "seconds": 790
+ },
+ "7.lr.2": {
+  "id": "Iqws-qzyZwc",
+  "title": "Slope and rate of change",
+  "channel": "Khan Academy",
+  "seconds": 822
+ },
+ "7.lr.3": {
+  "id": "405boztgZig",
+  "title": "x- and y-intercepts 2",
+  "channel": "Khan Academy",
+  "seconds": 205
+ },
+ "7.pg.1": {
+  "id": "Z3SXp8jDbdU",
+  "title": "Identifying scale factors",
+  "channel": "Khan Academy",
+  "seconds": 175
+ },
+ "7.pg.2": {
+  "id": "BI-rtfZVXy0",
+  "title": "Similar triangles",
+  "channel": "Khan Academy",
+  "seconds": 574
+ },
+ "7.ee.5": {
+  "id": "qW-Ce44ll0Q",
+  "title": "Negative numbers and number line examples",
+  "channel": "Khan Academy",
+  "seconds": 188
+ },
+ "7.ee.6": {
+  "id": "z1hz8-Kri1E",
+  "title": "Systems of equations word problems example 1",
+  "channel": "Khan Academy",
+  "seconds": 351
+ },
+ "7.ee.7": {
+  "id": "ITVQrzDSekU",
+  "title": "Ratio problem with basic algebra",
+  "channel": "Khan Academy",
+  "seconds": 312
+ },
+ "7.pr.6": {
+  "id": "d1oNF88SAgg",
+  "title": "Percent word problem example 1",
+  "channel": "Khan Academy",
+  "seconds": 378
+ },
+ "7.pr.7": {
+  "id": "w0nqd_HXHPQ",
+  "title": "Unit conversion within the metric system",
+  "channel": "Khan Academy",
+  "seconds": 557
+ },
+ "7.lr.4": {
+  "id": "Z65mz__8DQ0",
+  "title": "Slope and y intercept from equation",
+  "channel": "Khan Academy",
+  "seconds": 250
+ },
+ "7.lr.5": {
+  "id": "-6Fu2T_RSGM",
+  "title": "Writing equations in all forms",
+  "channel": "Khan Academy",
+  "seconds": 476
+ },
+ "7.pg.3": {
+  "id": "BI-rtfZVXy0",
+  "title": "Similar triangles",
+  "channel": "Khan Academy",
+  "seconds": 574
+ },
+ "7.pg.4": {
+  "id": "H-YuW_uckz4",
+  "title": "Similar shapes & transformations",
+  "channel": "Khan Academy",
+  "seconds": 157
+ },
+ "7.pg.5": {
+  "id": "XUOPGqKGbjk",
+  "title": "Scale drawings",
+  "channel": "Khan Academy",
+  "seconds": 213
+ },
+ "7.cg.1": {
+  "id": "jyLRpr2P0MQ",
+  "title": "Circles: radius, diameter, circumference and Pi",
+  "channel": "Khan Academy",
+  "seconds": 665
+ },
+ "7.cg.2": {
+  "id": "jyLRpr2P0MQ",
+  "title": "Circles: radius, diameter, circumference and Pi",
+  "channel": "Khan Academy",
+  "seconds": 665
+ },
+ "7.cg.3": {
+  "id": "WlGuG_VZl5c",
+  "title": "Area and Perimeter of Composite Figures",
+  "channel": "Khan Academy",
+  "seconds": 372
+ },
+ "7.cg.4": {
+  "id": "BTnAlNSgNsY",
+  "title": "Complementary and supplementary angles",
+  "channel": "Khan Academy",
+  "seconds": 511
+ },
+ "7.cg.5": {
+  "id": "7UISwx2Mr4c",
+  "title": "Congruent legs and base angles of isosceles triangles",
+  "channel": "Khan Academy",
+  "seconds": 543
+ },
+ "7.vl.1": {
+  "id": "EJTPGyWqhqc",
+  "title": "Volume of a rectangular prism: fractional dimensions",
+  "channel": "Khan Academy",
+  "seconds": 254
+ },
+ "7.vl.2": {
+  "id": "fD52yzLF8DA",
+  "title": "Volume of pyramids intuition",
+  "channel": "Khan Academy",
+  "seconds": 509
+ },
+ "7.vl.3": {
+  "id": "mtMNvnm71Z0",
+  "title": "Finding surface area using net",
+  "channel": "Khan Academy",
+  "seconds": 213
+ },
+ "7.st.1": {
+  "id": "s_w3EJ2Jzw0",
+  "title": "Comparing dot plots, histograms, and box plots",
+  "channel": "Khan Academy",
+  "seconds": 325
+ },
+ "7.st.2": {
+  "id": "gnyHsgTFXIY",
+  "title": "Reading bar charts: comparing two sets of data",
+  "channel": "Khan Academy",
+  "seconds": 90
+ },
+ "7.st.3": {
+  "id": "PdXDLNNXPik",
+  "title": "Techniques for random sampling and avoiding bias",
+  "channel": "Khan Academy",
+  "seconds": 552
+ },
+ "7.pf.1": {
+  "id": "CZehGcN4Stg",
+  "title": "What is net worth?",
+  "channel": "Khan Academy",
+  "seconds": 351
+ },
+ "7.pf.2": {
+  "id": "8AtM1R9NmwM",
+  "title": "FICO scores and credit bureaus",
+  "channel": "Khan Academy",
+  "seconds": 418
+ },
+ "7.pf.3": {
+  "id": "ImreruIbozU",
+  "title": "Things you should know about your credit card",
+  "channel": "Khan Academy",
+  "seconds": 325
+ },
+ "7.pf.4": {
+  "id": "733mgqrzNKs",
+  "title": "Time value of money",
+  "channel": "Khan Academy",
+  "seconds": 497
+ },
+ "7.pf.5": {
+  "id": "nI5EkFM4akQ",
+  "title": "Paying for college",
+  "channel": "Khan Academy",
+  "seconds": 315
+ },
+ "8.rn.1": {
+  "id": "Q6r3q3p4hKE",
+  "title": "Subsets of sets of Real numbers",
+  "channel": "Khan Academy India - English",
+  "seconds": 279
+ },
+ "8.rn.2": {
+  "id": "Lh7NMBPFVZw",
+  "title": "How to approximate square roots",
+  "channel": "Khan Academy",
+  "seconds": 287
+ },
+ "8.rn.3": {
+  "id": "trdbaV4TaAo",
+  "title": "Introduction to scientific notation",
+  "channel": "Khan Academy",
+  "seconds": 1248
+ },
+ "8.rn.4": {
+  "id": "cLP7INqs3JM",
+  "title": "Introduction to rational and irrational numbers",
+  "channel": "Khan Academy",
+  "seconds": 354
+ },
+ "8.sl.1": {
+  "id": "24WMbh1BBKc",
+  "title": "Similar triangles to prove that the slope is constant for a line",
+  "channel": "Khan Academy",
+  "seconds": 476
+ },
+ "8.sl.2": {
+  "id": "LCsMxvfeYd4",
+  "title": "Relating unit rate to slope in graphs of proportional relationships",
+  "channel": "Khan Academy",
+  "seconds": 159
+ },
+ "8.sl.3": {
+  "id": "CGZZINHT0I8",
+  "title": "Finding intercepts from a table",
+  "channel": "Khan Academy",
+  "seconds": 240
+ },
+ "8.sl.4": {
+  "id": "qYjiVWwefto",
+  "title": "Introduction to proportional relationships",
+  "channel": "Khan Academy",
+  "seconds": 229
+ },
+ "8.sl.5": {
+  "id": "Z65mz__8DQ0",
+  "title": "Slope and y intercept from equation",
+  "channel": "Khan Academy",
+  "seconds": 250
+ },
+ "8.sl.6": {
+  "id": "xKH1Evwu150",
+  "title": "Linear equation word problem",
+  "channel": "Khan Academy",
+  "seconds": 359
+ },
+ "8.sl.7": {
+  "id": "qYjiVWwefto",
+  "title": "Introduction to proportional relationships",
+  "channel": "Khan Academy",
+  "seconds": 229
+ },
+ "8.sl.8": {
+  "id": "gnXCTo6lAnA",
+  "title": "Identifying proportional & non-proportional functions",
+  "channel": "Khan Academy",
+  "seconds": 205
+ },
+ "8.sl.9": {
+  "id": "uk7gS3cZVp4",
+  "title": "Graph from slope-intercept equation example",
+  "channel": "Khan Academy",
+  "seconds": 182
+ },
+ "8.fn.1": {
+  "id": "kvGsIo1TmsM",
+  "title": "What is a function?",
+  "channel": "Khan Academy",
+  "seconds": 477
+ },
+ "8.sc.1": {
+  "id": "30LcZqRfPRY",
+  "title": "Bivariate relationship linearity, strength and direction",
+  "channel": "Khan Academy",
+  "seconds": 492
+ },
+ "8.sc.2": {
+  "id": "mfX_yUvwJho",
+  "title": "Interpreting a trend line",
+  "channel": "Khan Academy",
+  "seconds": 208
+ },
+ "8.sc.3": {
+  "id": "sHbX58y5D4U",
+  "title": "Constructing a scatter plot",
+  "channel": "Khan Academy",
+  "seconds": 151
+ },
+ "8.sc.4": {
+  "id": "GdIkEngwGNU",
+  "title": "Mean absolute deviation",
+  "channel": "Khan Academy",
+  "seconds": 549
+ },
+ "8.eq.1": {
+  "id": "f15zA0PhSek",
+  "title": "Introduction to solving an equation with variables on both sides",
+  "channel": "Khan Academy",
+  "seconds": 533
+ },
+ "8.eq.2": {
+  "id": "f15zA0PhSek",
+  "title": "Introduction to solving an equation with variables on both sides",
+  "channel": "Khan Academy",
+  "seconds": 533
+ },
+ "8.eq.3": {
+  "id": "qsL_5Y8uWPU",
+  "title": "Number of solutions to linear equations",
+  "channel": "Khan Academy",
+  "seconds": 327
+ },
+ "8.sy.1": {
+  "id": "5a6zpfl50go",
+  "title": "Solving linear systems by graphing",
+  "channel": "Khan Academy",
+  "seconds": 510
+ },
+ "8.vl.1": {
+  "id": "gL3HxBQyeg0",
+  "title": "Cylinder volume and surface area",
+  "channel": "Khan Academy",
+  "seconds": 487
+ },
+ "8.vl.2": {
+  "id": "GOLJkXcrZ2c",
+  "title": "Surface area of cylinders formula",
+  "channel": "Khan Academy",
+  "seconds": 240
+ },
+ "8.py.1": {
+  "id": "AA6RfgP-AHU",
+  "title": "The Pythagorean theorem intro",
+  "channel": "Khan Academy",
+  "seconds": 646
+ },
+ "8.py.2": {
+  "id": "9tXHcAbiNuI",
+  "title": "Converse of Pythagoras Theorem",
+  "channel": "Khan Academy India - English",
+  "seconds": 261
+ },
+ "8.py.3": {
+  "id": "-GI96_8q2OE",
+  "title": "Distances in the coordinate plane (between reflected points)",
+  "channel": "Khan Academy",
+  "seconds": 330
+ },
+ "8.ag.1": {
+  "id": "L1c0SP4W4ro",
+  "title": "Proof: Parallel lines divide triangle sides proportionally",
+  "channel": "Khan Academy",
+  "seconds": 392
+ },
+ "8.dl.1": {
+  "id": "b4ORXN7a0-w",
+  "title": "Dilation scale factor examples",
+  "channel": "Khan Academy",
+  "seconds": 299
+ },
+ "8.tr.1": {
+  "id": "oxSzkIftog8",
+  "title": "Translation example",
+  "channel": "Khan Academy",
+  "seconds": 96
+ },
+ "8.tr.2": {
+  "id": "INqaHHZGt8w",
+  "title": "Coordinate plane: reflecting points",
+  "channel": "Khan Academy",
+  "seconds": 215
+ },
+ "8.tr.3": {
+  "id": "6nUMiJfHLSA",
+  "title": "Points after rotation",
+  "channel": "Khan Academy",
+  "seconds": 492
+ },
+ "8.pf.1": {
+  "id": "79HS3N1IBt8",
+  "title": "Calculating simple & compound interest",
+  "channel": "Khan Academy",
+  "seconds": 394
+ },
+ "8.pf.2": {
+  "id": "ImreruIbozU",
+  "title": "Things you should know about your credit card",
+  "channel": "Khan Academy",
+  "seconds": 325
+ },
+ "8.pf.3": {
+  "id": "nI5EkFM4akQ",
+  "title": "Paying for college",
+  "channel": "Khan Academy",
+  "seconds": 315
+ },
+ "a1.le.1": {
+  "id": "Z7C69xP08d8",
+  "title": "Ex 2: Multi-step equation",
+  "channel": "Khan Academy",
+  "seconds": 204
+ },
+ "a1.le.2": {
+  "id": "VgDe_D8ojxw",
+  "title": "Algebra: Solving Inequalities",
+  "channel": "Khan Academy",
+  "seconds": 386
+ },
+ "a1.le.3": {
+  "id": "fnuIT7EhAvs",
+  "title": "Solving for a variable",
+  "channel": "Khan Academy",
+  "seconds": 84
+ },
+ "a1.fn.1": {
+  "id": "Uz0MtFlLD-k",
+  "title": "Relations and functions",
+  "channel": "Khan Academy",
+  "seconds": 417
+ },
+ "a1.fn.2": {
+  "id": "wd19aPWRRKA",
+  "title": "Domain and range of lines, segments, and rays",
+  "channel": "Khan Academy",
+  "seconds": 267
+ },
+ "a1.lf.1": {
+  "id": "Iqws-qzyZwc",
+  "title": "Slope and rate of change",
+  "channel": "Khan Academy",
+  "seconds": 822
+ },
+ "a1.lf.2": {
+  "id": "rgvysb9emcQ",
+  "title": "Graphs of linear equations",
+  "channel": "Khan Academy",
+  "seconds": 790
+ },
+ "a1.lf.3": {
+  "id": "-6Fu2T_RSGM",
+  "title": "Writing equations in all forms",
+  "channel": "Khan Academy",
+  "seconds": 476
+ },
+ "a1.lf.4": {
+  "id": "rgvysb9emcQ",
+  "title": "Graphs of linear equations",
+  "channel": "Khan Academy",
+  "seconds": 790
+ },
+ "a1.lf.5": {
+  "id": "9hryH94KFJA",
+  "title": "Equations of parallel and perpendicular lines",
+  "channel": "Khan Academy",
+  "seconds": 553
+ },
+ "a1.lf.6": {
+  "id": "RttvubuBhAE",
+  "title": "Shifting functions introduction",
+  "channel": "Khan Academy",
+  "seconds": 338
+ },
+ "a1.lf.7": {
+  "id": "rSadG6EtJmY",
+  "title": "Direct variation 1",
+  "channel": "Khan Academy",
+  "seconds": 219
+ },
+ "a1.dt.1": {
+  "id": "ROpbdO-gRUo",
+  "title": "Correlation and causality",
+  "channel": "Khan Academy",
+  "seconds": 645
+ },
+ "a1.dt.2": {
+  "id": "ioieTr41L24",
+  "title": "Estimating the line of best fit exercise",
+  "channel": "Khan Academy",
+  "seconds": 77
+ },
+ "a1.sq.1": {
+  "id": "_cooC3yG_p0",
+  "title": "Introduction to arithmetic sequences",
+  "channel": "Khan Academy",
+  "seconds": 426
+ },
+ "a1.sy.1": {
+  "id": "5a6zpfl50go",
+  "title": "Solving linear systems by graphing",
+  "channel": "Khan Academy",
+  "seconds": 510
+ },
+ "a1.sy.2": {
+  "id": "V7H1oUHXPkg",
+  "title": "Solving linear systems by substitution",
+  "channel": "Khan Academy",
+  "seconds": 561
+ },
+ "a1.sy.3": {
+  "id": "z1hz8-Kri1E",
+  "title": "Systems of equations word problems example 1",
+  "channel": "Khan Academy",
+  "seconds": 351
+ },
+ "a1.in.1": {
+  "id": "unSBFwK881s",
+  "title": "Introduction to graphing inequalities",
+  "channel": "Khan Academy",
+  "seconds": 484
+ },
+ "a1.in.2": {
+  "id": "CA4S7S-3Lg4",
+  "title": "Introduction to graphing systems of linear inequalities",
+  "channel": "Khan Academy",
+  "seconds": 336
+ },
+ "a1.ex.1": {
+  "id": "kITJ6qH7jS0",
+  "title": "Exponent rules part 1",
+  "channel": "Khan Academy",
+  "seconds": 583
+ },
+ "a1.ex.2": {
+  "id": "9SOSfRNCQZQ",
+  "title": "Graphing exponential functions",
+  "channel": "Khan Academy",
+  "seconds": 332
+ },
+ "a1.ex.3": {
+  "id": "RVv0Jgi3Pbw",
+  "title": "Graphing exponential growth & decay",
+  "channel": "Khan Academy",
+  "seconds": 245
+ },
+ "a1.sq.2": {
+  "id": "pXo0bG4iAyg",
+  "title": "Introduction to geometric sequences",
+  "channel": "Khan Academy",
+  "seconds": 645
+ },
+ "a1.po.1": {
+  "id": "ZGl2ExHwdak",
+  "title": "Adding and subtracting polynomials",
+  "channel": "Khan Academy",
+  "seconds": 104
+ },
+ "a1.po.2": {
+  "id": "fGThIRpWEE4",
+  "title": "Multiplying binomials and polynomials",
+  "channel": "Khan Academy",
+  "seconds": 589
+ },
+ "a1.po.3": {
+  "id": "t7OkENcBrxs",
+  "title": "How to use the distributive property to factor out the greatest common factor",
+  "channel": "Khan Academy",
+  "seconds": 206
+ },
+ "a1.po.4": {
+  "id": "GMoqg_s4Dl4",
+  "title": "Example 1: Factoring trinomials with a common factor",
+  "channel": "Khan Academy",
+  "seconds": 302
+ },
+ "a1.po.5": {
+  "id": "HLNSouzygw0",
+  "title": "Difference of squares intro",
+  "channel": "Khan Academy",
+  "seconds": 293
+ },
+ "a1.qd.1": {
+  "id": "MQtsRYPx3v0",
+  "title": "Graphing a parabola using roots and vertex",
+  "channel": "Khan Academy",
+  "seconds": 281
+ },
+ "a1.qd.2": {
+  "id": "RttvubuBhAE",
+  "title": "Shifting functions introduction",
+  "channel": "Khan Academy",
+  "seconds": 338
+ },
+ "a1.qd.3": {
+  "id": "_QqhuLixNEk",
+  "title": "Introduction to vertex form of a quadratic",
+  "channel": "Khan Academy",
+  "seconds": 373
+ },
+ "a1.rd.1": {
+  "id": "_Ao9_4chEX8",
+  "title": "Simplifying Radical Expressions 1",
+  "channel": "Khan Academy",
+  "seconds": 205
+ },
+ "a1.qd.4": {
+  "id": "55G8037gsKY",
+  "title": "Solving quadratic equations by square roots",
+  "channel": "Khan Academy",
+  "seconds": 663
+ },
+ "a1.qd.5": {
+  "id": "bNQY0z76M5A",
+  "title": "Solving quadratic equations by completing the square",
+  "channel": "Khan Academy",
+  "seconds": 846
+ },
+ "a1.qd.6": {
+  "id": "i7idZfS8t8w",
+  "title": "How to use the quadratic formula",
+  "channel": "Khan Academy",
+  "seconds": 992
+ },
+ "a1.qd.7": {
+  "id": "CxEFOozrMSE",
+  "title": "Linear, Quadratic, and Exponential Models",
+  "channel": "Khan Academy",
+  "seconds": 495
+ },
+ "a1.md.1": {
+  "id": "CxEFOozrMSE",
+  "title": "Linear, Quadratic, and Exponential Models",
+  "channel": "Khan Academy",
+  "seconds": 495
+ },
+ "geo.fo.1": {
+  "id": "J_u_ROMJR8U",
+  "title": "Definitions and undefined terms",
+  "channel": "Khan Academy",
+  "seconds": 253
+ },
+ "geo.fo.2": {
+  "id": "nyZuite17Pc",
+  "title": "Distance formula",
+  "channel": "Khan Academy",
+  "seconds": 579
+ },
+ "geo.fo.3": {
+  "id": "9hryH94KFJA",
+  "title": "Equations of parallel and perpendicular lines",
+  "channel": "Khan Academy",
+  "seconds": 553
+ },
+ "geo.fo.4": {
+  "id": "WR2R_wrdEVY",
+  "title": "Constructing a perpendicular bisector using a compass and straightedge",
+  "channel": "Khan Academy",
+  "seconds": 86
+ },
+ "geo.fo.5": {
+  "id": "5kojy1CHuyI",
+  "title": "Conditional statements and logical equivalence",
+  "channel": "Khan Academy",
+  "seconds": 344
+ },
+ "geo.fo.6": {
+  "id": "H-de6Tkxej8",
+  "title": "Angle basics",
+  "channel": "Khan Academy",
+  "seconds": 409
+ },
+ "geo.fo.7": {
+  "id": "H-E5rlpCVu4",
+  "title": "Angles formed by parallel lines and transversals",
+  "channel": "Khan Academy",
+  "seconds": 427
+ },
+ "geo.fo.8": {
+  "id": "fSu1LKnhM5Q",
+  "title": "Two column proof showing segments are perpendicular",
+  "channel": "Khan Academy",
+  "seconds": 666
+ },
+ "geo.tr.1": {
+  "id": "XiAoUDfrar0",
+  "title": "Introduction to transformations",
+  "channel": "Khan Academy",
+  "seconds": 442
+ },
+ "geo.tr.2": {
+  "id": "f_DTiXZpb8M",
+  "title": "Compositions of linear transformations 1",
+  "channel": "Khan Academy",
+  "seconds": 741
+ },
+ "geo.cg.1": {
+  "id": "3aDV3L8aZtY",
+  "title": "Example of rigid transformation and congruence",
+  "channel": "Khan Academy",
+  "seconds": 237
+ },
+ "geo.cg.2": {
+  "id": "8Ld8Csu4sEs",
+  "title": "Other triangle congruence postulates",
+  "channel": "Khan Academy",
+  "seconds": 808
+ },
+ "geo.cg.3": {
+  "id": "Q8EtrFIHJuc",
+  "title": "Proving triangle congruence",
+  "channel": "Khan Academy",
+  "seconds": 258
+ },
+ "geo.cg.4": {
+  "id": "W9B3VYdC5T8",
+  "title": "Sum of the exterior angles of convex polygon",
+  "channel": "Khan Academy",
+  "seconds": 324
+ },
+ "geo.cg.5": {
+  "id": "7FTNWE7RTfQ",
+  "title": "Equilateral and isosceles example problems",
+  "channel": "Khan Academy",
+  "seconds": 387
+ },
+ "geo.cg.6": {
+  "id": "Cx-_PxD4DJM",
+  "title": "Dividing line segments according to ratio",
+  "channel": "Khan Academy",
+  "seconds": 237
+ },
+ "geo.si.1": {
+  "id": "6dyWKD_JPhI",
+  "title": "Thinking about dilations",
+  "channel": "Khan Academy",
+  "seconds": 159
+ },
+ "geo.si.2": {
+  "id": "BI-rtfZVXy0",
+  "title": "Similar triangles",
+  "channel": "Khan Academy",
+  "seconds": 574
+ },
+ "geo.si.3": {
+  "id": "94IRgatBRjM",
+  "title": "Basic Proportionality Theorem",
+  "channel": "Khan Academy India - English",
+  "seconds": 414
+ },
+ "geo.rt.1": {
+  "id": "9tXHcAbiNuI",
+  "title": "Converse of Pythagoras Theorem",
+  "channel": "Khan Academy India - English",
+  "seconds": 261
+ },
+ "geo.rt.2": {
+  "id": "l5VbdqRjTXc",
+  "title": "Example: Trig to solve the sides and angles of a right triangle",
+  "channel": "Khan Academy",
+  "seconds": 424
+ },
+ "geo.rt.3": {
+  "id": "tSHitjFIjd8",
+  "title": "45-45-90 triangles",
+  "channel": "Khan Academy",
+  "seconds": 570
+ },
+ "geo.rt.4": {
+  "id": "znR9tW4AiZI",
+  "title": "Using Trig Functions",
+  "channel": "Khan Academy",
+  "seconds": 603
+ },
+ "geo.qd.1": {
+  "id": "qG3HnRccrQU",
+  "title": "Sum of interior angles of a polygon",
+  "channel": "Khan Academy",
+  "seconds": 550
+ },
+ "geo.qd.2": {
+  "id": "LhrGS4-Dd9I",
+  "title": "Proof: Opposite sides of parallelogram congruent",
+  "channel": "Khan Academy",
+  "seconds": 510
+ },
+ "geo.qd.3": {
+  "id": "7cVw7VjOnUI",
+  "title": "Construction of Rhombus & Square",
+  "channel": "Khan Academy India - English",
+  "seconds": 386
+ },
+ "geo.qd.4": {
+  "id": "j3-XYLnxJDY",
+  "title": "Area of a trapezoid",
+  "channel": "Khan Academy",
+  "seconds": 288
+ },
+ "geo.ci.1": {
+  "id": "aNi1-zeEps8",
+  "title": "Inscribed angles",
+  "channel": "Khan Academy",
+  "seconds": 79
+ },
+ "geo.ci.2": {
+  "id": "OzeHAwjaG60",
+  "title": "Proof: Angle between a tangent and a secant",
+  "channel": "Khan Academy",
+  "seconds": 208
+ },
+ "geo.ci.3": {
+  "id": "axGgnXyuiTg",
+  "title": "Example: Radian measure and arc length",
+  "channel": "Khan Academy",
+  "seconds": 209
+ },
+ "geo.ci.4": {
+  "id": "iX5UgArMyiI",
+  "title": "Writing standard equation of a circle",
+  "channel": "Khan Academy",
+  "seconds": 339
+ },
+ "geo.ms.1": {
+  "id": "9LlgG6l5eXU",
+  "title": "Area of regular polygon given radius",
+  "channel": "Khan Academy",
+  "seconds": 333
+ },
+ "geo.ms.2": {
+  "id": "IShaLZ8CMXY",
+  "title": "How volume changes from changing dimensions",
+  "channel": "Khan Academy",
+  "seconds": 256
+ },
+ "geo.ms.3": {
+  "id": "gL3HxBQyeg0",
+  "title": "Cylinder volume and surface area",
+  "channel": "Khan Academy",
+  "seconds": 487
+ },
+ "geo.ms.4": {
+  "id": "4vLy5VoUcQE",
+  "title": "Volume with cross sections: intro",
+  "channel": "Khan Academy",
+  "seconds": 330
+ },
+ "geo.pr.1": {
+  "id": "jKlgEvRFItE",
+  "title": "Probability for a geometric random variable",
+  "channel": "Khan Academy",
+  "seconds": 171
+ },
+ "geo.pr.2": {
+  "id": "DROZVHObeko",
+  "title": "Permutation formula",
+  "channel": "Khan Academy",
+  "seconds": 454
+ },
+ "geo.pr.3": {
+  "id": "pIfpHdGVwLU",
+  "title": "Conditional probability and independence",
+  "channel": "Khan Academy",
+  "seconds": 247
+ }
+}

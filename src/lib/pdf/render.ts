@@ -25,13 +25,13 @@ async function buildWatchBlock(watch?: WatchInput): Promise<WatchBlock | undefin
   if (!watch) return undefined;
   let qrDataUrl: string | undefined;
   try {
-    // Pure black on white with a real quiet zone — phone cameras routinely
-    // fail on tinted/low-contrast QR codes (the original dark-gray-on-cream
-    // version didn't scan reliably).
+    // Pure black on white with a FULL 4-module quiet zone (Apple's scanner
+    // guidance) — phone cameras routinely fail on tinted, cramped, or small
+    // QR codes. Print size is set in worksheet-template.tsx (≥1.5 inches).
     qrDataUrl = await QRCode.toDataURL(watch.url, {
       errorCorrectionLevel: 'M',
-      margin: 2,
-      width: 240,
+      margin: 4,
+      width: 300,
       color: { dark: '#000000', light: '#ffffff' },
     });
   } catch (e) {

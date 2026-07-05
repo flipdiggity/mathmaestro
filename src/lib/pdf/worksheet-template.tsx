@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   watchRow: { fontSize: 9, color: '#1f2937', marginBottom: 2, lineHeight: 1.35 },
   watchUrl: { fontSize: 8, color: '#6b7280', marginTop: 3 },
-  watchQr: { width: 84, height: 84 },
+  watchQr: { width: 110, height: 110 },
   watchQrLabel: { fontSize: 7, color: '#854d0e', textAlign: 'center', marginTop: 1 },
 });
 

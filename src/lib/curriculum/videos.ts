@@ -1,3 +1,4 @@
+import curatedYouTube from './youtube-videos.json';
 /**
  * Curated "watch before you work" videos for every curriculum topic (grades 3-8).
  *
@@ -297,35 +298,65 @@ const TOPIC_VIDEOS: Record<string, TopicVideo[]> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** 1-3 curated videos for a topic, ALWAYS ending with a can't-404 search link. */
+// ── Exact YouTube videos, one per topic ──────────────────────────────────────
+// Curated by scripts/curate-youtube-videos.ts from live YouTube search
+// (Khan Academy's official channel + Math Antics), each verified via oEmbed.
+// YouTube plays instantly with no login — the primary link for every topic.
+
+interface YouTubePick {
+  id: string;
+  title: string;
+  channel: string;
+  seconds: number;
+}
+const YOUTUBE_PICKS: Record<string, YouTubePick> = curatedYouTube as Record<string, YouTubePick>;
+
+/** The single exact video to watch for a topic (null if none curated). */
+export function getExactVideo(topicId: string): (TopicVideo & { videoId: string }) | null {
+  const pick = YOUTUBE_PICKS[topicId];
+  if (!pick) return null;
+  return {
+    videoId: pick.id,
+    title: pick.title,
+    url: `https://www.youtube.com/watch?v=${pick.id}`,
+    source: pick.channel.toLowerCase().includes('khan') ? 'Khan Academy' : 'YouTube',
+    minutes: pick.seconds ? Math.max(1, Math.round(pick.seconds / 60)) : undefined,
+  };
+}
+
 export function getVideosForTopic(topic: {
   id: string;
   name: string;
   strand: string;
   gradeLevel: number;
 }): TopicVideo[] {
-  // At most 2 curated entries so the search fallback always fits within the cap.
-  const curated = (TOPIC_VIDEOS[topic.id] ?? []).slice(0, 2);
+  // The exact YouTube video comes FIRST — that's the one to watch.
+  const exact = getExactVideo(topic.id);
+  const rest: TopicVideo[] = [];
 
-  // Safety net for topic ids we don't have curated entries for (e.g. older
-  // curriculum id schemes): offer the grade-level Khan Academy course.
-  if (curated.length === 0) {
+  // One "go deeper" link: the hand-curated KA entry, or the course page.
+  const kaEntry = (TOPIC_VIDEOS[topic.id] ?? [])[0];
+  if (kaEntry) {
+    rest.push(kaEntry);
+  } else {
     const course = KA_COURSES[topic.gradeLevel];
     if (course) {
-      curated.push({
+      rest.push({
         title: `Khan Academy: ${course.label} math course`,
         url: course.url,
         source: 'Khan Academy',
       });
     }
   }
+  if (!exact) {
+    rest.push({
+      title: `Search YouTube: ${topic.name}`,
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(`khan academy ${topic.name}`)}`,
+      source: 'YouTube',
+    });
+  }
 
-  const fallback: TopicVideo = {
-    title: `Search Khan Academy: ${topic.name}`,
-    url: `https://www.khanacademy.org/search?page_search_query=${encodeURIComponent(topic.name)}`,
-    source: 'Khan Academy',
-  };
-
-  return [...curated, fallback].slice(0, 3);
+  return [...(exact ? [exact] : []), ...rest].slice(0, 3);
 }
 
 /** Absolute URL of the "watch before you work" page for a worksheet (QR target). */
