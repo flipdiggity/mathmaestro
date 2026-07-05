@@ -92,10 +92,56 @@ function synthesizeExpected(fig: Figure): ExpectedAnswer | undefined {
   return undefined;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Caption/label answer leaks.
+//
+// The model decorates figures with captions and labels — and sometimes those
+// carry THE ANSWER: a "write an equation, then complete the table" question
+// with the table captioned "y = 2x + 3" hands the equation over. Rule: any
+// caption/label containing an equation ("=") that does NOT already appear in
+// the question text is information the student wasn't given → strip it.
+// (Captions that restate a given equation, e.g. "y = 3x - 4" quoted from the
+// question, are kept — they're helpful context, not a leak.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const normalizeMath = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+
+function leaksAnswer(text: string | undefined, questionText: string): boolean {
+  if (!text || !text.includes('=')) return false;
+  return !normalizeMath(questionText).includes(normalizeMath(text));
+}
+
+function stripCaptionLeaks(questionText: string, figure: Figure): Figure {
+  if (figure.kind === 'table' && leaksAnswer(figure.caption, questionText)) {
+    const { caption: _dropped, ...rest } = figure;
+    void _dropped;
+    return rest as Figure;
+  }
+  if (figure.kind === 'coordinate-plane') {
+    const cleanedFunctions = figure.functions?.map((f) =>
+      leaksAnswer(f.label, questionText) ? { ...f, label: undefined } : f
+    );
+    const cleanedLines = figure.lines?.map((l) =>
+      leaksAnswer(l.label, questionText) ? { ...l, label: undefined } : l
+    );
+    const cleanedLabels = figure.labels?.filter((l) => !leaksAnswer(l.text, questionText));
+    return {
+      ...figure,
+      ...(cleanedFunctions ? { functions: cleanedFunctions } : {}),
+      ...(cleanedLines ? { lines: cleanedLines } : {}),
+      ...(cleanedLabels ? { labels: cleanedLabels } : {}),
+    };
+  }
+  if (figure.kind === 'data-display' && leaksAnswer(figure.title, questionText)) {
+    return { ...figure, title: undefined };
+  }
+  return figure;
+}
+
 /**
  * If the question is a student-draw task, return a blanked figure (answer
- * elements removed) plus an expectedAnswer carrying the target. Otherwise
- * returns the inputs unchanged.
+ * elements removed) plus an expectedAnswer carrying the target. Also strips
+ * captions/labels that leak the answer. Otherwise returns inputs unchanged.
  */
 export function sanitizeStudentDrawFigure(
   questionText: string,
@@ -103,6 +149,7 @@ export function sanitizeStudentDrawFigure(
   expectedAnswer: ExpectedAnswer | undefined
 ): { figure: Figure | undefined; expectedAnswer: ExpectedAnswer | undefined } {
   if (!figure) return { figure, expectedAnswer };
+  figure = stripCaptionLeaks(questionText, figure);
   if (figure.kind !== 'coordinate-plane' && figure.kind !== 'number-line') {
     return { figure, expectedAnswer };
   }

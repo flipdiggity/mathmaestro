@@ -46,6 +46,7 @@ const navLinks = [
   { href: "/plan", label: "Plan" },
   { href: "/worksheets", label: "History" },
   { href: "/children", label: "Children" },
+  { href: "/settings", label: "Settings" },
   // saas: Billing = Stripe portal (update card, invoices); account menu (sign
   // out etc.) is the Clerk UserButton next to the links. Admin stays off the
   // customer nav — admins reach /admin by URL and the page itself gates.

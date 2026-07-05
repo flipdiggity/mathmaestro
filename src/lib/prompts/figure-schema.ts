@@ -47,6 +47,7 @@ in words and DO NOT ask the student to imagine a grid. Instead, attach a structu
 
 RULES:
 - Put the diagram in the "figure" field. Never describe coordinates, axes, or shapes to draw inside the question text itself.
+- NO ANSWERS IN CAPTIONS OR LABELS: a figure's caption/label/title must never contain something the student is asked to find. If the question says "write an equation, then complete the table", the table caption must NOT be that equation — omit the caption or use a neutral one ("Cost per box"). Only restate values the question already gives.
 - Only attach a figure when the problem genuinely needs one. Plain arithmetic gets no figure (omit the field or set it to null).
 - BLANK CANVAS FOR STUDENT-DRAW TASKS: when the problem asks the student to plot, graph, draw, sketch, or mark something THEMSELVES, the figure must be an EMPTY canvas — a coordinate plane with only axes and the right xRange/yRange, or a number line with only ticks. Do NOT include the points/lines/functions/intervals that are the answer. Put the answer in "expectedAnswer" instead. (e.g. "Plot (3,-2)" -> figure is a blank plane; expectedAnswer is the point. NOT a plane with (3,-2) already drawn.)
 - DO show the figure when it is GIVEN for the student to READ (e.g. "What is the slope of the line shown?") — then the line belongs in the figure.

@@ -182,44 +182,82 @@ export async function generateAdaptiveWorksheet(
     ...(await getRecentQuestionTexts(child.id)),
   ].slice(0, 60);
 
-  const { system, prompt } = buildGeneratePrompt(
-    child.name,
-    child.displayGrade ?? child.grade,
-    contexts,
-    questionCount,
-    previousQuestions,
-    { courseLabel, planNote: planNoteFor(plan, child.name) }
-  );
-
-  // Generate with one retry: a truncated/malformed JSON response (the usual
-  // failure mode at high temperature) should not kill the child's daily sheet.
-  let parsed: { title: string; questions: Question[] } | null = null;
-  let lastError: unknown = null;
-  for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
-    try {
-      // Sonnet 5 thinks adaptively before writing (it verifies its own answer
-      // key) — max_tokens must cover thinking + the ~10K-token worksheet JSON.
-      const responseText = await generateText(prompt, {
-        system,
-        maxTokens: 32000,
-      });
-      let cleaned = responseText.trim();
-      if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  // One model call for a set of topic contexts, with one retry on
+  // truncated/malformed JSON (the usual failure mode).
+  const callModel = async (
+    ctxs: TopicGenContext[],
+    count: number
+  ): Promise<{ title: string; questions: Question[] }> => {
+    const { system, prompt } = buildGeneratePrompt(
+      child.name,
+      child.displayGrade ?? child.grade,
+      ctxs,
+      count,
+      previousQuestions,
+      { courseLabel, planNote: planNoteFor(plan, child.name) }
+    );
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        // Sonnet 5 thinks adaptively before writing (it verifies its own
+        // answer key) — max_tokens must cover thinking + the worksheet JSON.
+        const responseText = await generateText(prompt, { system, maxTokens: 32000 });
+        let cleaned = responseText.trim();
+        if (cleaned.startsWith('```')) {
+          cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+        }
+        return JSON.parse(cleaned) as { title: string; questions: Question[] };
+      } catch (e) {
+        lastError = e;
+        console.error(
+          `generateAdaptiveWorksheet: attempt ${attempt + 1} failed for ${child.name}:`,
+          e instanceof Error ? e.message : e
+        );
       }
-      parsed = JSON.parse(cleaned) as { title: string; questions: Question[] };
-    } catch (e) {
-      lastError = e;
-      console.error(
-        `generateAdaptiveWorksheet: attempt ${attempt + 1} failed for ${child.name}:`,
-        e instanceof Error ? e.message : e
-      );
     }
-  }
-  if (!parsed) {
     throw lastError instanceof Error
       ? lastError
       : new Error(`Worksheet generation failed for ${child.name}`);
+  };
+
+  // SPEED: a full 25-question sheet takes the model ~2-3 minutes of writing +
+  // self-checking. Splitting the topics into two halves and generating them in
+  // PARALLEL roughly halves the wall-clock without touching quality — each
+  // half still gets the full rubric, rotation notes, and its topics' exact
+  // question counts. Halves are merged back in selection order.
+  let parsed: { title: string; questions: Question[] };
+  if (questionCount >= 16 && contexts.length >= 4) {
+    const halfA: TopicGenContext[] = [];
+    const halfB: TopicGenContext[] = [];
+    let countA = 0;
+    let countB = 0;
+    for (const c of contexts) {
+      if (countA <= countB) {
+        halfA.push(c);
+        countA += c.questionCount;
+      } else {
+        halfB.push(c);
+        countB += c.questionCount;
+      }
+    }
+    const [resA, resB] = await Promise.all([
+      callModel(halfA, countA),
+      callModel(halfB, countB),
+    ]);
+    // Merge in the original selection order so sections stay grouped.
+    const byTopic = new Map<string, Question[]>();
+    for (const q of [...resA.questions, ...resB.questions]) {
+      const list = byTopic.get(q.topicId) ?? [];
+      list.push(q);
+      byTopic.set(q.topicId, list);
+    }
+    const ordered = contexts.flatMap((c) => byTopic.get(c.selection.topic.id) ?? []);
+    // Keep any questions whose topicId didn't match a selection (model typo).
+    const seen = new Set(ordered);
+    const strays = [...resA.questions, ...resB.questions].filter((q) => !seen.has(q));
+    parsed = { title: resA.title, questions: [...ordered, ...strays] };
+  } else {
+    parsed = await callModel(contexts, questionCount);
   }
   const verifiedQuestions = verifyWorksheetAnswers(parsed.questions);
 

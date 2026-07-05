@@ -25,11 +25,14 @@ async function buildWatchBlock(watch?: WatchInput): Promise<WatchBlock | undefin
   if (!watch) return undefined;
   let qrDataUrl: string | undefined;
   try {
+    // Pure black on white with a real quiet zone — phone cameras routinely
+    // fail on tinted/low-contrast QR codes (the original dark-gray-on-cream
+    // version didn't scan reliably).
     qrDataUrl = await QRCode.toDataURL(watch.url, {
       errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 160,
-      color: { dark: '#1f2937', light: '#fefce8' },
+      margin: 2,
+      width: 240,
+      color: { dark: '#000000', light: '#ffffff' },
     });
   } catch (e) {
     console.error('QR generation failed:', e);

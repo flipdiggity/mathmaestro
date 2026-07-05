@@ -177,11 +177,13 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
   }
 
   const html = buildDailyEmailHtml(dateStr, reports, topicsByChild);
-  // In saas mode each family's email goes to the account owner. A 'felipe@local'
-  // personal-mode address isn't routable; fall back to DAILY_EMAIL_TO (default
-  // recipient inside sendEmail) for the local user.
+  // Each family's email goes to their stored address — settable on /settings
+  // in personal mode too. The seeded 'felipe@local' sentinel isn't routable;
+  // it falls back to DAILY_EMAIL_TO (default recipient inside sendEmail).
   const recipient =
-    isSaas && group.email && !group.email.endsWith('@local') ? group.email : undefined;
+    group.email && group.email.includes('@') && !group.email.endsWith('@local')
+      ? group.email
+      : undefined;
   const send = await sendEmail({
     to: recipient,
     subject: `Math Maestro — ${dateStr}`,
