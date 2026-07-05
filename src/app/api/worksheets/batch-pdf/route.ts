@@ -5,6 +5,7 @@ import { renderBatchWorksheetPDF, TopicReviewRef } from '@/lib/pdf/render';
 import { getTopicById } from '@/lib/curriculum';
 import { buildWatchInput } from '@/lib/curriculum/videos';
 import { Question } from '@/types';
+import { worksheetFilename } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${childName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}_week.pdf"`,
+        'Content-Disposition': `attachment; filename="${worksheetFilename(childName, { plural: true })}"`,
       },
     });
   } catch (error) {

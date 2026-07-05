@@ -6,6 +6,7 @@ import { renderWorksheetPDF, TopicReviewRef } from '@/lib/pdf/render';
 import { getTopicById } from '@/lib/curriculum';
 import { buildWatchInput } from '@/lib/curriculum/videos';
 import { Question } from '@/types';
+import { worksheetFilename } from '@/lib/utils';
 
 export async function GET(
   request: NextRequest,
@@ -48,10 +49,10 @@ export async function GET(
       data: { status: 'printed' },
     });
 
-    const datePart = (worksheet.createdAt ?? new Date()).toISOString().slice(0, 10);
-    const safeName = worksheet.child.name.replace(/[^a-zA-Z0-9]/g, '_');
-    const safeTitle = worksheet.title.replace(/[^a-zA-Z0-9]/g, '_');
-    const filename = `${safeName}_${datePart}_${safeTitle}.pdf`;
+    // Canonical name: eliana_worksheet_july_6_2026.pdf (dated to the sheet).
+    const filename = worksheetFilename(worksheet.child.name, {
+      date: worksheet.createdAt ?? undefined,
+    });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {

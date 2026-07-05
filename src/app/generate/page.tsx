@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { worksheetFilename } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Loader2,
@@ -724,7 +725,7 @@ function GeneratePageInner() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `worksheets_week.pdf`;
+      a.download = worksheetFilename(selectedChild?.name ?? 'math', { plural: true });
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {

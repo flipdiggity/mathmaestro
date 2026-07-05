@@ -9,6 +9,7 @@ import {
 import { sendEmail, EmailAttachment } from '@/lib/email';
 import { buildDailyEmailHtml, ChildReport } from '@/lib/daily-email-template';
 import { isSaas } from '@/lib/mode';
+import { worksheetFilename } from '@/lib/utils';
 
 // Allow up to 5 min — generating + rendering two worksheets calls the LLM twice.
 export const maxDuration = 300;
@@ -125,9 +126,8 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
         result.watch
       );
 
-      const datePart = today.toISOString().slice(0, 10);
       const attachment: EmailAttachment = {
-        filename: `${child.name.replace(/[^a-zA-Z0-9]/g, '_')}_${datePart}_${dayOfWeek}.pdf`,
+        filename: worksheetFilename(child.name, { weekday: dayOfWeek }),
         content: Buffer.from(pdf).toString('base64'),
       };
 

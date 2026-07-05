@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { worksheetFilename } from '@/lib/utils';
 import Link from 'next/link';
 import { ChevronDown, ChevronRight, Download, Loader2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -110,6 +111,8 @@ function WorksheetHistoryContent() {
   const [isLoadingChildren, setIsLoadingChildren] = useState(true);
   const [isLoadingWorksheets, setIsLoadingWorksheets] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const selectedChildName =
+    children.find((c) => c.id === selectedChildId)?.name ?? 'math';
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBatchDownloading, setIsBatchDownloading] = useState(false);
@@ -205,7 +208,7 @@ function WorksheetHistoryContent() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${ws.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      a.download = worksheetFilename(selectedChildName, { date: new Date(ws.createdAt) });
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -213,7 +216,7 @@ function WorksheetHistoryContent() {
     } finally {
       setDownloadingId(null);
     }
-  }, []);
+  }, [selectedChildName]);
 
   const handleBatchDownload = useCallback(async () => {
     if (selectedIds.size === 0) return;
@@ -229,7 +232,7 @@ function WorksheetHistoryContent() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `worksheets_${selectedIds.size}.pdf`;
+      a.download = worksheetFilename(selectedChildName, { plural: true });
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -237,7 +240,7 @@ function WorksheetHistoryContent() {
     } finally {
       setIsBatchDownloading(false);
     }
-  }, [selectedIds]);
+  }, [selectedIds, selectedChildName]);
 
   const handleBatchDelete = useCallback(async () => {
     if (selectedIds.size === 0) return;
