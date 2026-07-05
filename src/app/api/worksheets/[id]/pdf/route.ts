@@ -4,6 +4,7 @@ import { requireUser } from '@/lib/auth';
 import { verifyWorksheetOwnership } from '@/lib/ownership';
 import { renderWorksheetPDF, TopicReviewRef } from '@/lib/pdf/render';
 import { getTopicById } from '@/lib/curriculum';
+import { buildWatchInput } from '@/lib/curriculum/videos';
 import { Question } from '@/types';
 
 export async function GET(
@@ -19,14 +20,16 @@ export async function GET(
 
     const questions: Question[] = JSON.parse(worksheet.questionsJson);
 
-    // Build the "Before you start" review block from the worksheet's topics.
+    // Build the "Before you start" review + "Watch first" blocks from the topics.
     let topicReviews: TopicReviewRef[] = [];
+    let watch: ReturnType<typeof buildWatchInput> | undefined;
     try {
       const topicIds: string[] = JSON.parse(worksheet.topicIdsJson);
-      topicReviews = topicIds
+      const topics = topicIds
         .map((id) => getTopicById(id))
-        .filter((t): t is NonNullable<typeof t> => Boolean(t))
-        .map((t) => ({ topicId: t.id, topicName: t.name, bookRefs: t.bookRefs }));
+        .filter((t): t is NonNullable<typeof t> => Boolean(t));
+      topicReviews = topics.map((t) => ({ topicId: t.id, topicName: t.name, bookRefs: t.bookRefs }));
+      watch = buildWatchInput(worksheet.id, topics);
     } catch {
       // No/invalid topicIdsJson — render without the review block.
     }
@@ -36,7 +39,8 @@ export async function GET(
       worksheet.child.name,
       questions,
       undefined,
-      topicReviews
+      topicReviews,
+      watch
     );
 
     await prisma.worksheet.update({

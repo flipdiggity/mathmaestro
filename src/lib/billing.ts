@@ -13,6 +13,9 @@ import { isAdminEmail } from './admin';
 const FREE_GENERATES = 5;
 const FREE_GRADES = 5;
 
+/** Cents charged per metered unit (one worksheet generate / one grading). */
+export const USAGE_UNIT_COST_CENTS = { generate: 50, grade: 75 } as const;
+
 // Large finite stand-in for "unlimited" — Infinity does not survive
 // JSON serialization (it becomes null in API responses).
 const UNLIMITED = 999_999;
@@ -27,10 +30,21 @@ export async function getUsageCounts(userId: string) {
     };
   }
 
-  const [generateCount, gradeCount] = await Promise.all([
-    prisma.usageRecord.count({ where: { userId, type: 'generate' } }),
-    prisma.usageRecord.count({ where: { userId, type: 'grade' } }),
+  // The usage ledger is one row per unit. A normal use is a row with POSITIVE
+  // creditsCost (recordUsage). An admin refund (POST /api/admin/refund) is an
+  // anti-use: a row of the SAME type ('generate' | 'grade') with NEGATIVE
+  // creditsCost. Consumption is therefore (positive rows) − (negative rows)
+  // per type, floored at zero — counting by sign instead of summing cents
+  // keeps historical rows correct even if unit prices change later.
+  const [generateUsed, gradeUsed, generateRefunded, gradeRefunded] = await Promise.all([
+    prisma.usageRecord.count({ where: { userId, type: 'generate', creditsCost: { gt: 0 } } }),
+    prisma.usageRecord.count({ where: { userId, type: 'grade', creditsCost: { gt: 0 } } }),
+    prisma.usageRecord.count({ where: { userId, type: 'generate', creditsCost: { lt: 0 } } }),
+    prisma.usageRecord.count({ where: { userId, type: 'grade', creditsCost: { lt: 0 } } }),
   ]);
+
+  const generateCount = Math.max(0, generateUsed - generateRefunded);
+  const gradeCount = Math.max(0, gradeUsed - gradeRefunded);
 
   return {
     generates: generateCount,
@@ -77,7 +91,7 @@ export async function recordUsage(
 ): Promise<void> {
   if (!isSaas) return; // personal use: no metering
 
-  const cost = type === 'generate' ? 50 : 75; // cents
+  const cost = USAGE_UNIT_COST_CENTS[type]; // cents
 
   await prisma.usageRecord.create({
     data: {

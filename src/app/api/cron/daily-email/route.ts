@@ -79,11 +79,12 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
   const sendResults: Array<{ user: string; ok: boolean; error?: string }> = [];
 
   for (const group of Array.from(byUser.values())) {
-  const reports: ChildReport[] = [];
   const topicsByChild: Record<string, string[]> = {};
-  const attachments: EmailAttachment[] = [];
 
-  for (const child of group.children) {
+  // Generate all of a family's sheets in PARALLEL — Sonnet 5 thinks before it
+  // writes, so sequential generation for 2+ kids would flirt with maxDuration.
+  const perChild = await Promise.all(
+    group.children.map(async (child): Promise<{ report: ChildReport; attachment?: EmailAttachment; topics?: string[] }> => {
     try {
       // Yesterday's recap: most recent graded worksheet (score + missed topics).
       const lastGraded = await prisma.worksheet.findFirst({
@@ -92,6 +93,9 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
         orderBy: { createdAt: 'desc' },
       });
       const missedTopicIds = await getRecentlyMissedTopicIds(child.id);
+      const ungradedCount = await prisma.worksheet.count({
+        where: { childId: child.id, status: 'generated' },
+      });
 
       const gen: GenerationChild = {
         id: child.id,
@@ -101,6 +105,9 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
         state: child.state,
         district: child.district,
         targetTestDate: child.targetTestDate,
+        courseId: child.courseId,
+        displayGrade: child.displayGrade,
+        planEndDate: child.planEndDate,
       };
 
       const result = await generateAdaptiveWorksheet(gen, {
@@ -114,34 +121,59 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
         child.name,
         result.questions,
         dateStr,
-        result.topicReviews
+        result.topicReviews,
+        result.watch
       );
 
       const datePart = today.toISOString().slice(0, 10);
-      attachments.push({
+      const attachment: EmailAttachment = {
         filename: `${child.name.replace(/[^a-zA-Z0-9]/g, '_')}_${datePart}_${dayOfWeek}.pdf`,
         content: Buffer.from(pdf).toString('base64'),
-      });
+      };
 
-      topicsByChild[child.name] = Array.from(new Set(result.questions.map((q) => q.topicName)));
-      reports.push({
-        name: child.name,
-        ok: true,
-        worksheetId: result.worksheetId,
-        topicCount: result.topicIds.length,
-        yesterdayScore: lastGraded?.gradingResult?.scorePercent ?? null,
-        missedCount: missedTopicIds.length,
-      });
+      const plan = result.plan;
+      const planLine =
+        plan && plan.planEnd && plan.paceNeeded != null
+          ? `Plan: ${plan.remaining} topics left · ${plan.weekdaysLeft} school days · ${
+              plan.onTrack === false ? 'BEHIND pace' : 'on pace'
+            } for ${plan.planEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+          : null;
+
+      return {
+        report: {
+          name: child.name,
+          ok: true,
+          worksheetId: result.worksheetId,
+          topicCount: result.topicIds.length,
+          yesterdayScore: lastGraded?.gradingResult?.scorePercent ?? null,
+          missedCount: missedTopicIds.length,
+          planLine,
+          planOnTrack: plan?.onTrack ?? null,
+          watchUrl: result.watch.url,
+          ungradedCount,
+        },
+        attachment,
+        topics: Array.from(new Set(result.questions.map((q) => q.topicName))),
+      };
     } catch (e) {
       // Surface the failure in the function logs — these errors were
       // previously swallowed into the email body only.
       console.error(`daily-email: generation failed for ${child.name}:`, e);
-      reports.push({
-        name: child.name,
-        ok: false,
-        error: e instanceof Error ? e.message : 'generation failed',
-      });
+      return {
+        report: {
+          name: child.name,
+          ok: false,
+          error: e instanceof Error ? e.message : 'generation failed',
+        },
+      };
     }
+    })
+  );
+
+  const reports: ChildReport[] = perChild.map((r) => r.report);
+  const attachments: EmailAttachment[] = perChild.flatMap((r) => (r.attachment ? [r.attachment] : []));
+  for (const r of perChild) {
+    if (r.topics) topicsByChild[r.report.name] = r.topics;
   }
 
   const html = buildDailyEmailHtml(dateStr, reports, topicsByChild);

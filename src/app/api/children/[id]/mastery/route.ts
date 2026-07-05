@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
-import { getTopicsForChild } from '@/lib/curriculum';
+import { resolveCurriculumForChild } from '@/lib/curriculum/courses';
 
 export async function GET(
   request: NextRequest,
@@ -25,7 +25,7 @@ export async function GET(
     // orphaned rows (often duplicate names with stale scores) confuse the UI
     // and misrepresent the child's state. Pass ?all=1 to inspect everything.
     const pool = new Set(
-      getTopicsForChild(child.grade, child.track, child.state, child.district).map((t) => t.id)
+      resolveCurriculumForChild(child).topics.map((t) => t.id)
     );
     const includeAll = request.nextUrl.searchParams.get('all');
     const mastery = includeAll ? all : all.filter((m) => pool.has(m.topicId));

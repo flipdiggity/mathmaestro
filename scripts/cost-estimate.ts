@@ -1,6 +1,6 @@
 // Estimates input token sizes of the REAL generate + grade prompts.
 // Run: npx tsx scripts/cost-estimate.ts
-import { buildGeneratePrompt } from '../src/lib/prompts/generate-worksheet';
+import { buildGeneratePrompt, contextsFromSelections } from '../src/lib/prompts/generate-worksheet';
 import { buildGradePrompt } from '../src/lib/prompts/grade-worksheet';
 import { getTopicsForChild } from '../src/lib/curriculum';
 import { TopicSelection } from '../src/lib/curriculum/types';
@@ -18,7 +18,7 @@ const selections: TopicSelection[] = picked.map((t, i) => ({
   reason: i < 9 ? 'current' : 'review',
   priority: 100 - i,
 }));
-const g = buildGeneratePrompt('Eliana', 7, selections, 50);
+const g = buildGeneratePrompt('Eliana', 7, contextsFromSelections(selections, 50), 50);
 const gInput = tok(g.system) + tok(g.prompt);
 console.log('=== GENERATE (50q) ===');
 console.log('system chars', g.system.length, '~tok', tok(g.system));

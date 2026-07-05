@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
-import { getTopicsForChild } from '@/lib/curriculum';
+import { resolveCurriculumForChild } from '@/lib/curriculum/courses';
 
 export async function GET(
   request: NextRequest,
@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'Child not found' }, { status: 404 });
     }
 
-    const topics = getTopicsForChild(child.grade, child.track, child.state, child.district);
+    const topics = resolveCurriculumForChild(child).topics;
     return NextResponse.json({ topics });
   } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -1,120 +1,245 @@
 import { TopicSelection } from '../curriculum/types';
-import { getCurrentNineWeeks, getNineWeeksDateRange, getNineWeeksLabel } from '../curriculum/pacing';
+import { getCurrentNineWeeks, getNineWeeksDateRange, getNineWeeksLabel, isSummerBreak } from '../curriculum/pacing';
 import { FIGURE_KIND_HINTS, FIGURE_SCHEMA_PROMPT, EXPECTED_ANSWER_SCHEMA_PROMPT } from './figure-schema';
+import { DIFFICULTY_RUBRIC, QUESTION_FORMATS, MissRecord } from '../adaptive';
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-// Per-topic difficulty target based on the student's current mastery. The same
-// skill gets HARDER once they've shown mastery (extension/multi-step) and EASIER
-// when they're weak (scaffolded), so they move through quickly on strengths and
-// get support on gaps.
-function difficultyDirective(s: TopicSelection): string {
-  const m = s.mastery;
-  if (m == null) return 'TARGET: new topic — start accessible (difficulty 1-2) and build understanding';
-  if (m >= 85) return `TARGET: MASTERED (~${Math.round(m)}%) — make these CHALLENGING (difficulty 3): multi-step, larger/uglier numbers, or an extension/application of the same skill`;
-  if (m >= 60) return `TARGET: developing (~${Math.round(m)}%) — mostly difficulty 2 with one stretch problem`;
-  return `TARGET: needs work (~${Math.round(m)}%) — keep difficulty 1-2, scaffolded and confidence-building`;
+// Per-topic generation context: the selection plus everything the adaptive
+// engine knows that should shape today's problems.
+export interface TopicGenContext {
+  selection: TopicSelection;
+  /** Integer difficulty most questions should hit (1-4). */
+  serveLevel: number;
+  /** Which practice day this is for the child on this topic (1 = first time). */
+  dayNumber: number;
+  /** Formats served recently for this topic — avoid repeating them. */
+  recentFormats: string[];
+  /** Figure signatures served recently (e.g. "coordinate-plane") — vary them. */
+  recentFigures: string[];
+  /** Recent wrong answers on this topic — attack the misconception again. */
+  misses: MissRecord[];
+  /** Exact number of questions to generate for this topic. */
+  questionCount: number;
+}
+
+export interface GeneratePromptOptions {
+  /** e.g. "Math 8 Accelerated (6th grade)" — names the course in the persona. */
+  courseLabel?: string;
+  /** One-line plan/pace context, e.g. "Summer plan: finish by Aug 12 — on pace." */
+  planNote?: string;
+}
+
+// Allocate totalQuestions across selections by role weight (current-heavy),
+// honoring the ≤10% maintenance cap. Largest-remainder rounding, every topic
+// gets at least 1.
+export function allocateQuestions(
+  selections: TopicSelection[],
+  totalQuestions: number
+): number[] {
+  const weight = (s: TopicSelection) => {
+    if (s.maintenance) return 0.8;
+    switch (s.reason) {
+      case 'current':
+      case 'new':
+        return 3;
+      case 'review':
+        return 1.4;
+      case 'preview':
+        return 1;
+      default:
+        return 1;
+    }
+  };
+  const weights = selections.map(weight);
+  const totalW = weights.reduce((a, b) => a + b, 0) || 1;
+  const raw = weights.map((w) => (w / totalW) * totalQuestions);
+  const counts = raw.map((r) => Math.max(1, Math.floor(r)));
+  // Maintenance cap: at most 10% of the sheet (min 1).
+  const maintCap = Math.max(1, Math.floor(totalQuestions * 0.1));
+  selections.forEach((s, i) => {
+    if (s.maintenance) counts[i] = Math.min(counts[i], maintCap);
+  });
+  // Distribute the remainder to the largest fractional parts among non-capped topics.
+  let used = counts.reduce((a, b) => a + b, 0);
+  const order = raw
+    .map((r, i) => ({ i, frac: r - Math.floor(r) }))
+    .sort((a, b) => b.frac - a.frac)
+    .map((x) => x.i);
+  let guard = 0;
+  while (used < totalQuestions && guard < 1000) {
+    for (const i of order) {
+      if (used >= totalQuestions) break;
+      if (selections[i].maintenance && counts[i] >= maintCap) continue;
+      counts[i]++;
+      used++;
+    }
+    guard++;
+  }
+  while (used > totalQuestions) {
+    // Trim from the largest bucket (never below 1).
+    const maxI = counts.indexOf(Math.max(...counts));
+    if (counts[maxI] <= 1) break;
+    counts[maxI]--;
+    used--;
+  }
+  return counts;
+}
+
+/**
+ * Build default contexts straight from selections (no adaptive state) — used
+ * by smoke-test scripts and any caller without per-topic history. Difficulty
+ * defaults from mastery the way the serve ladder would on day one.
+ */
+export function contextsFromSelections(
+  selections: TopicSelection[],
+  totalQuestions: number
+): TopicGenContext[] {
+  const counts = allocateQuestions(selections, totalQuestions);
+  return selections.map((s, i) => {
+    const m = s.mastery;
+    const level = m == null ? 1 : m >= 85 ? 3 : m >= 60 ? 2 : 1;
+    return {
+      selection: s,
+      serveLevel: s.maintenance ? Math.min(4, level + 1) : level,
+      dayNumber: 1,
+      recentFormats: [],
+      recentFigures: [],
+      misses: [],
+      questionCount: counts[i],
+    };
+  });
+}
+
+// Difficulty mix line for a topic: most questions at the serve level, one
+// warm-up below, one stretch above (when the count allows).
+function difficultyMix(level: number, count: number): string {
+  if (count <= 1) return `difficulty ${level}`;
+  if (count === 2) {
+    return level >= 4
+      ? `one at difficulty 3, one at difficulty 4`
+      : `one at difficulty ${level}, one at difficulty ${Math.min(4, level + 1)} (stretch)`;
+  }
+  const stretch = level < 4 ? 1 : 0;
+  const warmup = level > 1 ? 1 : 0;
+  const atLevel = count - stretch - warmup;
+  const parts: string[] = [];
+  if (warmup) parts.push(`1 at difficulty ${level - 1} (warm-up)`);
+  parts.push(`${atLevel} at difficulty ${level}`);
+  if (stretch) parts.push(`1 at difficulty ${Math.min(4, level + 1)} (stretch)`);
+  return parts.join(', ');
 }
 
 export function buildGeneratePrompt(
   childName: string,
   gradeLevel: number,
-  selections: TopicSelection[],
+  contexts: TopicGenContext[],
   totalQuestions: number,
-  previousQuestions?: string[]
+  previousQuestions?: string[],
+  opts: GeneratePromptOptions = {}
 ): { system: string; prompt: string } {
-  const currentNW = getCurrentNineWeeks();
-  const { start, end } = getNineWeeksDateRange(currentNW);
-  const nwLabel = getNineWeeksLabel(currentNW);
+  const summer = isSummerBreak();
+  let periodLine: string;
+  if (summer) {
+    periodLine = opts.planNote
+      ? `Summer session. ${opts.planNote}`
+      : 'Summer session — building mastery before the school year starts.';
+  } else {
+    const currentNW = getCurrentNineWeeks();
+    const { start, end } = getNineWeeksDateRange(currentNW);
+    periodLine = `Current period: ${getNineWeeksLabel(currentNW)} (${formatDate(start)} – ${formatDate(end)})${opts.planNote ? `. ${opts.planNote}` : ''}`;
+  }
 
-  // Tag topics with their calendar role
-  function getCalendarTag(s: TopicSelection): string {
-    if (s.reason === 'current') return 'CURRENT';
+  function tag(s: TopicSelection): string {
     if (s.reason === 'preview') return 'PREVIEW';
-    if (s.reason === 'review') return 'REVIEW';
-    // Legacy 'new' reason — treat as current
+    if (s.reason === 'review') return s.maintenance ? 'REVIEW (mastered — spaced refresher)' : 'REVIEW';
     return 'CURRENT';
   }
 
-  function describeTopic(s: TopicSelection, i: number): string {
-    const tag = getCalendarTag(s);
+  function describeTopic(c: TopicGenContext, i: number): string {
+    const s = c.selection;
     const kind = s.topic.imageType ?? 'coordinate-plane';
-    const imageNote = s.topic.requiresImage
-      ? `\n   FIGURE REQUIRED: At least one problem for this topic must include a "figure" payload for ${FIGURE_KIND_HINTS[kind] ?? `figure.kind "${kind}"`}. Put the diagram in the figure field, never in the question text.`
-      : '';
-    return `${i + 1}. [${tag}] ${s.topic.name} (${s.topic.tpiCode}) - ${s.topic.description}
-   Difficulty: ${s.topic.difficulty}/3 | ${difficultyDirective(s)} | Examples (illustrate the SKILL ONLY — invent fresh numbers/contexts, do NOT copy these): ${s.topic.sampleProblems.join('; ')}${imageNote}`;
+    const lines: string[] = [];
+    lines.push(
+      `${i + 1}. [${tag(s)}] ${s.topic.name} (${s.topic.tpiCode}) — ${s.topic.description}`
+    );
+    lines.push(
+      `   GENERATE ${c.questionCount} question${c.questionCount === 1 ? '' : 's'}: ${difficultyMix(c.serveLevel, c.questionCount)}. This is practice day ${c.dayNumber} on this topic for ${childName}${c.dayNumber > 1 ? ' — problems must be clearly HARDER and structurally DIFFERENT than earlier days' : ''}.`
+    );
+    if (s.topic.requiresImage) {
+      lines.push(
+        `   FIGURES: at least ${Math.max(1, Math.ceil(c.questionCount / 2))} of these questions must include a "figure" payload (${FIGURE_KIND_HINTS[kind] ?? `figure.kind "${kind}"`}). Vary the figure between questions — different orientations, ranges, and values.`
+      );
+    }
+    if (c.recentFormats.length > 0) {
+      const avoid = Array.from(new Set(c.recentFormats)).slice(0, 4);
+      const fresh = QUESTION_FORMATS.filter((f) => !avoid.includes(f)).slice(0, 5);
+      lines.push(
+        `   FORMAT ROTATION: recent sheets used [${avoid.join(', ')}] for this topic — today prefer [${fresh.join(', ')}].`
+      );
+    }
+    if (c.recentFigures.length > 0) {
+      lines.push(
+        `   FIGURE ROTATION: recently drawn: ${Array.from(new Set(c.recentFigures)).slice(0, 4).join(', ')} — use different figure kinds/parameters today.`
+      );
+    }
+    if (c.misses.length > 0) {
+      const m = c.misses[0];
+      lines.push(
+        `   MISSED LAST TIME: "${m.q}" — ${childName} answered "${m.a}"${m.fb ? ` (${m.fb})` : ''}. Include 1 problem that attacks the SAME misconception with fresh numbers/context.`
+      );
+    }
+    lines.push(
+      `   Skill examples (illustrate the SKILL ONLY — invent fresh numbers/contexts, do NOT copy): ${s.topic.sampleProblems.slice(0, 2).join('; ')}`
+    );
+    return lines.join('\n');
   }
 
-  const topicDescriptions = selections.map(describeTopic).join('\n');
+  const topicDescriptions = contexts.map(describeTopic).join('\n');
+  const courseLine = opts.courseLabel
+    ? `${childName} is working through ${opts.courseLabel} in Eanes ISD, Austin TX.`
+    : `${childName} is a grade ${gradeLevel} student in Eanes ISD, Austin TX.`;
 
-  // Count topics by calendar role for distribution guidance
-  const currentCount = selections.filter((s) => getCalendarTag(s) === 'CURRENT').length;
-  const reviewCount = selections.filter((s) => getCalendarTag(s) === 'REVIEW').length;
-  const previewCount = selections.filter((s) => getCalendarTag(s) === 'PREVIEW').length;
+  const anyFigureTopics = contexts.some((c) => c.selection.topic.requiresImage);
+  const visualShare = anyFigureTopics ? Math.ceil(totalQuestions * 0.3) : Math.ceil(totalQuestions * 0.15);
 
-  const hasMultipleSections = (currentCount > 0 && reviewCount > 0) || previewCount > 0;
-  const sectionInstruction = hasMultipleSections
-    ? `\n- Group questions by section: [CURRENT] topics first, then [REVIEW], then [PREVIEW] if any
-- Set the "section" field to "new" for CURRENT/PREVIEW questions and "review" for REVIEW questions`
-    : '';
+  const system = `You are an expert math teacher creating a personalized worksheet for ${childName}. ${courseLine} You create clear, age-appropriate problems aligned to Texas TEKS standards, printed on paper and solved by hand.
 
-  const anyFigureTopics = selections.some((s) => s.topic.requiresImage);
+${periodLine}
 
-  const system = `You are an expert math teacher creating worksheets for ${childName}, a ${gradeLevel}th grade student in Eanes ISD, Austin TX. You create clear, age-appropriate math problems aligned to Texas TEKS standards.
+${DIFFICULTY_RUBRIC}
 
-Current period: ${nwLabel} (${formatDate(start)} – ${formatDate(end)})
-Primary focus topics for this period are marked [CURRENT].
-Generate more questions for [CURRENT] topics than [REVIEW] or [PREVIEW] topics.
-[PREVIEW] topics are upcoming material — keep those problems introductory.
+Every topic below states EXACTLY how many questions to generate and at which difficulty. FOLLOW THE COUNTS AND LEVELS — they encode what ${childName} is ready for. Difficulty 4 problems should genuinely challenge a strong student (multi-skill synthesis, backwards reasoning, error analysis), never just bigger numbers.
 
-Each topic has a TARGET difficulty based on how well ${childName} has already mastered it — FOLLOW IT. Topics they've mastered should get harder, more complex problems (same skill, pushed further); topics they're weak on should get easier, scaffolded problems. Set each question's "difficulty" field (1, 2, or 3) to match its topic's target.
+QUESTION FORMATS — set each question's "format" field to exactly one of:
+${QUESTION_FORMATS.map((f) => `- "${f}"`).join('\n')}
+Variety is a hard requirement: use at least 5 different formats across the sheet, never the same format for adjacent questions on the same topic, and honor each topic's FORMAT ROTATION note. Two problems on the same skill must differ in STRUCTURE (table vs graph vs verbal vs backwards), not just numbers.
+
+VISUAL PROBLEMS: kids understand better when they can SEE the math. Include real figures (the "figure" field) on at least ${visualShare} of the ${totalQuestions} questions — every figure-required topic per its note, plus tape-diagrams/tables/number-lines wherever they genuinely help on word problems. Vary every figure: different angle measures AND rotations, different ranges, different orientations. Never emit two visually similar figures on one sheet.
 
 CRITICAL RULES:
-- Generate exactly ${totalQuestions} problems
-- STRICT GRADE LEVEL: Only generate problems appropriate for grade ${gradeLevel}. Do NOT include concepts from higher grades. Stick exactly to what is described in each topic description — do not extrapolate to related but more advanced concepts.
-- VERIFY EVERY ANSWER: Double-check your arithmetic for every problem. Compute the answer step by step before writing it. Wrong answers are unacceptable.
-- Problems should be clearly worded and unambiguous
-- Include a mix of computation and word problems
-- Each problem must have exactly ONE correct answer
-- For fractions, use simplified form
-- For word problems, use age-appropriate contexts
-- Number problems sequentially (1, 2, 3, ...)
-- Provide the correct answer for each problem
-- DO NOT include multiple choice - all problems should be free response
-- Each question must be UNIQUE — do not repeat the same problem with different numbers
-- Use ASCII math operators in all text: >= <= != ; write "pi", "sqrt", "x" for multiply, "deg" for degrees${sectionInstruction}
+- Generate exactly ${totalQuestions} problems total, matching each topic's stated count.
+- STRICT LEVEL: Only concepts from the topic descriptions below. Difficulty comes from DEPTH on the same skill (more steps, harder reasoning, awkward numbers), NEVER from importing higher-grade concepts.
+- VERIFY EVERY ANSWER: compute each answer step by step before writing it. Wrong answers are unacceptable.
+- Each problem must have exactly ONE correct answer (except "multi-part", whose parts each have one answer — put both in "answer" like "a) 12 b) 30").
+- ANSWER SPREAD: answers must not cluster (not several problems answering 12, not every slope equal to 3). Scan your answers before finalizing and rework repeats.
+- Number problems sequentially (1, 2, 3, ...).
+- No multiple choice. Free response only.
+- Use ASCII math operators in all text: >= <= != ; write "pi", "sqrt", "x" for multiply, "deg" for degrees.
+- Group questions: [CURRENT] first, then [REVIEW], then [PREVIEW]. Set "section" to "review" for REVIEW questions, otherwise "new".
 ${FIGURE_SCHEMA_PROMPT}
 ${EXPECTED_ANSWER_SCHEMA_PROMPT}`;
 
-  // Spaced-review of ALREADY-MASTERED topics is capped to a small slice of the
-  // sheet — the bulk must be new/current material and things still being learned.
-  const maintenanceNames = selections.filter((s) => s.maintenance).map((s) => s.topic.name);
-  const maxMaintenance = Math.max(1, Math.floor(totalQuestions * 0.1));
-  const maintenanceCap = maintenanceNames.length
-    ? `\n\nSPACED-REVIEW CAP: ${maintenanceNames.join(', ')} ${maintenanceNames.length === 1 ? 'is a topic' : 'are topics'} ${childName} has ALREADY MASTERED. Include AT MOST ${maxMaintenance} problem${maxMaintenance === 1 ? '' : 's'} total on ${maintenanceNames.length === 1 ? 'it' : 'them'} — a single quick, harder refresher. The other ~${totalQuestions - maxMaintenance}+ problems must be on new/current material and topics still being learned, NOT on mastered topics.`
-    : '';
-
-  const prompt = `Create a math worksheet with ${totalQuestions} problems covering these topics:
+  const prompt = `Create a math worksheet with exactly ${totalQuestions} problems from these topics:
 
 ${topicDescriptions}
 
-Distribute questions across the topics, giving more weight to [CURRENT] topics (the primary focus for this grading period). For [REVIEW] topics, make problems slightly easier to rebuild confidence. For [CURRENT] topics, start accessible and increase difficulty. For [PREVIEW] topics, keep problems introductory and approachable.${maintenanceCap}
+FRESHNESS: invent new numbers, contexts, and phrasings every time. Do not open the sheet the same way as previous sheets. Rotate real-world contexts widely (sports, cooking, gaming, building, money, travel, science) — do not reuse a context twice on one sheet.${previousQuestions && previousQuestions.length > 0 ? `
 
-IMPORTANT: Use fresh, unique numbers and contexts every time. Vary the specific values, word problem scenarios, and phrasings so that no two worksheets are alike, even for the same topics. Do NOT start with the same type of question each time — vary the order of topic types across worksheets.
-
-ANSWER & STRUCTURE VARIETY (important — recent worksheets were too repetitive):
-- Do NOT let answers cluster. Spread the numeric ANSWERS across a wide range — never give several problems the same answer value (e.g. do not make many lines have slope 3, or many problems answer to 12). Before finalizing, scan your answers and re-work any that repeat.
-- Vary the STRUCTURE of problems within a topic, not just the numbers. Mix forms: from a table, from a graph, from two points, from a verbal description, working forwards vs backwards, find-the-missing-piece, real-world vs abstract. Two problems on the same skill should look and feel different, not be the same template with swapped numbers.
-- Use a varied mix of number types where appropriate: positives and negatives, whole numbers, fractions, and decimals; small and larger magnitudes.
-- Do NOT reuse the example problems above verbatim — they only show the skill. Invent your own numbers, functions, and scenarios. In particular, vary the FIRST problem every time (e.g. don't always open a "complete the table for y = ..." item with the same equation or x-values).${previousQuestions && previousQuestions.length > 0 ? `
-
-DO NOT REPEAT these questions from previous days (use completely different numbers, contexts, and phrasings):
+DO NOT REPEAT these recent questions (different numbers, contexts, structures AND formats required):
 ${previousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : ''}
-${anyFigureTopics ? `
-For any topic marked FIGURE REQUIRED above, attach a structured "figure" object (per the FIGURES section) to at least one of its problems. Put the diagram in the figure field — never describe the graph, grid, or shape in the question text. The system renders the figure as a real diagram.` : ''}
 
 Return ONLY valid JSON in this exact format (no markdown, no code fences):
 {
@@ -122,11 +247,12 @@ Return ONLY valid JSON in this exact format (no markdown, no code fences):
   "questions": [
     {
       "number": 1,
-      "question": "The full problem text (no graph descriptions — use the figure field)",
+      "question": "The full problem text (no graph/diagram descriptions — use the figure field)",
       "answer": "The correct answer (number, fraction, or short text)",
       "topicId": "the topic ID from above",
       "topicName": "the topic name",
       "difficulty": 1,
+      "format": "word-problem",
       "isVerifiable": true,
       "section": "new",
       "figure": null,
@@ -135,10 +261,9 @@ Return ONLY valid JSON in this exact format (no markdown, no code fences):
   ]
 }
 
-For "figure": include a structured figure object (see the FIGURES section) when the problem needs a diagram; otherwise use null.
-For "expectedAnswer": include a structured expected-answer object (see the EXPECTED ANSWER section) whenever the answer can be described structurally; otherwise use null.
-Set isVerifiable to true for problems with numeric/fraction answers, false for open-ended or explanation-type answers.
-Set section to "new" for CURRENT and PREVIEW topics, or "review" for REVIEW topics.`;
+For "figure": include a structured figure object (see FIGURES) when the problem needs a diagram; otherwise null.
+For "expectedAnswer": include a structured expected-answer object (see EXPECTED ANSWER) whenever the answer can be described structurally; otherwise null.
+Set isVerifiable true for numeric/fraction answers, false for open-ended reasoning.`;
 
   return { system, prompt };
 }

@@ -6,6 +6,7 @@ import { checkUsageAllowance, recordUsage } from '@/lib/billing';
 import { gradeWithMultipleImages } from '@/lib/anthropic';
 import { buildGradePrompt } from '@/lib/prompts/grade-worksheet';
 import { updateMastery } from '@/lib/spaced-repetition';
+import { updateAfterGrade, GradedQuestionOutcome } from '@/lib/adaptive';
 import { Question, GradingQuestionResult } from '@/types';
 import sharp from 'sharp';
 
@@ -96,7 +97,9 @@ export async function POST(request: NextRequest) {
 
     let responseText;
     try {
-      responseText = await gradeWithMultipleImages(images, prompt, { system, maxTokens: 8192 });
+      // Budget covers the model's adaptive thinking (it re-derives answers
+      // while reading the handwriting) plus the per-question JSON.
+      responseText = await gradeWithMultipleImages(images, prompt, { system, maxTokens: 16384 });
     } catch (aiError) {
       console.error('AI grading API error:', aiError);
       return NextResponse.json(
@@ -173,32 +176,43 @@ export async function POST(request: NextRequest) {
     // Record usage
     await recordUsage(user.id, 'grade', worksheetId);
 
-    const topicScores = new Map<string, { correct: number; total: number; name: string; grade: number }>();
+    // Per-topic outcomes: drive BOTH the mastery EMA and the adaptive
+    // difficulty ladder + miss-retry memory.
+    const topicOutcomes = new Map<
+      string,
+      { name: string; outcomes: GradedQuestionOutcome[] }
+    >();
     for (const result of gradingData.results) {
       const question = questions.find((q) => q.number === result.number);
       if (!question) continue;
 
-      const existing = topicScores.get(question.topicId) || {
-        correct: 0,
-        total: 0,
+      const entry = topicOutcomes.get(question.topicId) || {
         name: question.topicName,
-        grade: 0,
+        outcomes: [],
       };
-      existing.total++;
-      if (result.isCorrect) existing.correct++;
-      existing.name = question.topicName;
-      topicScores.set(question.topicId, existing);
+      entry.outcomes.push({
+        difficulty: question.difficulty || 1,
+        isCorrect: result.isCorrect,
+        question: question.question,
+        studentAnswer: result.studentAnswer,
+        feedback: result.feedback,
+      });
+      topicOutcomes.set(question.topicId, entry);
     }
 
-    for (const [topicId, scores] of Array.from(topicScores.entries())) {
-      const scorePercent = (scores.correct / scores.total) * 100;
+    for (const [topicId, { name, outcomes }] of Array.from(topicOutcomes.entries())) {
+      const correct = outcomes.filter((o) => o.isCorrect).length;
+      const scorePercent = (correct / outcomes.length) * 100;
       await updateMastery(
         worksheet.childId,
         topicId,
-        scores.name,
+        name,
         worksheet.child.grade,
         scorePercent
       );
+      // Difficulty ladder: ≥85% at the served level moves up (toward Challenge),
+      // <60% moves down; wrong answers become targeted-retry material tomorrow.
+      await updateAfterGrade(worksheet.childId, topicId, outcomes);
     }
 
     return NextResponse.json({

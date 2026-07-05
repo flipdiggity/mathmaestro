@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CalendarClock, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
@@ -11,6 +12,168 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
+interface PlanInfo {
+  planEnd: string | null;
+  weekdaysLeft: number | null;
+  totalTopics: number;
+  advancedTopics: number;
+  remaining: number;
+  paceNeeded: number | null;
+  achievablePace: number;
+  onTrack: boolean | null;
+  projectedFinishWeekdays: number | null;
+  frontierTopicName: string | null;
+}
+interface CourseInfo {
+  id: string;
+  label: string;
+  description: string;
+}
+
+function PlanStatusCard({ childId, childName }: { childId: string; childName: string }) {
+  const [plan, setPlan] = useState<PlanInfo | null>(null);
+  const [course, setCourse] = useState<CourseInfo | null>(null);
+  const [courses, setCourses] = useState<CourseInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/children/${childId}/plan`);
+      const data = await res.json();
+      setPlan(data.plan ?? null);
+      setCourse(data.course ?? null);
+      setCourses(data.courses ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, [childId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function update(body: { planEndDate?: string | null; courseId?: string }) {
+    setSaving(true);
+    try {
+      await fetch(`/api/children/${childId}/plan`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      await load();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-5 flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading plan…
+        </CardContent>
+      </Card>
+    );
+  }
+  if (!plan) return null;
+
+  const pct = plan.totalTopics > 0 ? Math.round((plan.advancedTopics / plan.totalTopics) * 100) : 0;
+  const endDateInput = plan.planEnd ? plan.planEnd.slice(0, 10) : '';
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Target className="h-4 w-4 text-indigo-600" />
+            {course ? course.label : `${childName}'s plan`}
+          </CardTitle>
+          {plan.onTrack != null && (
+            <Badge className={plan.onTrack ? 'bg-green-600' : 'bg-red-600'}>
+              {plan.onTrack ? 'On pace' : 'Behind pace'}
+            </Badge>
+          )}
+        </div>
+        {course && <p className="text-xs text-muted-foreground mt-1">{course.description}</p>}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <div className="flex items-center justify-between mb-1.5 text-sm">
+            <span className="font-medium text-slate-700">
+              {plan.advancedTopics} of {plan.totalTopics} topics covered
+            </span>
+            <span className="font-mono text-slate-600">{pct}%</span>
+          </div>
+          <Progress value={pct} className="h-2" />
+          {plan.frontierTopicName && (
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Up next: <span className="font-medium text-slate-700">{plan.frontierTopicName}</span>
+            </p>
+          )}
+        </div>
+
+        {plan.planEnd && plan.paceNeeded != null ? (
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-lg bg-muted/60 p-2">
+              <p className="text-lg font-bold">{plan.remaining}</p>
+              <p className="text-[11px] text-muted-foreground">topics left</p>
+            </div>
+            <div className="rounded-lg bg-muted/60 p-2">
+              <p className="text-lg font-bold">{plan.weekdaysLeft}</p>
+              <p className="text-[11px] text-muted-foreground">school days left</p>
+            </div>
+            <div className="rounded-lg bg-muted/60 p-2">
+              <p className="text-lg font-bold">{Math.round((plan.paceNeeded ?? 0) * 10) / 10}</p>
+              <p className="text-[11px] text-muted-foreground">topics/day needed</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            No finish-by date set — sheets advance at the default pace. Set a date to pace the
+            plan (e.g. the first day of school).
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="text-xs text-muted-foreground flex flex-col gap-1">
+            <span className="flex items-center gap-1">
+              <CalendarClock className="h-3.5 w-3.5" /> Finish by
+            </span>
+            <input
+              type="date"
+              className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+              value={endDateInput}
+              disabled={saving}
+              onChange={(e) => update({ planEndDate: e.target.value || null })}
+            />
+          </label>
+          <label className="text-xs text-muted-foreground flex flex-col gap-1 flex-1 min-w-[220px]">
+            <span>Course</span>
+            <Select
+              value={course?.id ?? ''}
+              onValueChange={(v) => update({ courseId: v })}
+              disabled={saving}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Standard grade sequence" />
+              </SelectTrigger>
+              <SelectContent>
+                {courses.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 interface Child {
   id: string;
@@ -142,6 +305,14 @@ export default function PlanPage() {
             </Select>
           </CardContent>
         </Card>
+
+        {selectedChildId && (
+          <PlanStatusCard
+            key={selectedChildId}
+            childId={selectedChildId}
+            childName={selectedChild?.name ?? 'your child'}
+          />
+        )}
 
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

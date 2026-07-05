@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { renderBatchWorksheetPDF, TopicReviewRef } from '@/lib/pdf/render';
 import { getTopicById } from '@/lib/curriculum';
+import { buildWatchInput } from '@/lib/curriculum/videos';
 import { Question } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -30,12 +31,14 @@ export async function POST(request: NextRequest) {
 
     const days = worksheets.map((ws) => {
       let topicReviews: TopicReviewRef[] = [];
+      let watch: ReturnType<typeof buildWatchInput> | undefined;
       try {
         const topicIds: string[] = JSON.parse(ws.topicIdsJson);
-        topicReviews = topicIds
+        const topics = topicIds
           .map((id) => getTopicById(id))
-          .filter((t): t is NonNullable<typeof t> => Boolean(t))
-          .map((t) => ({ topicId: t.id, topicName: t.name, bookRefs: t.bookRefs }));
+          .filter((t): t is NonNullable<typeof t> => Boolean(t));
+        topicReviews = topics.map((t) => ({ topicId: t.id, topicName: t.name, bookRefs: t.bookRefs }));
+        watch = buildWatchInput(ws.id, topics);
       } catch {
         // No/invalid topicIdsJson — render without the review block.
       }
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
         title: ws.title,
         questions: JSON.parse(ws.questionsJson) as Question[],
         topicReviews,
+        watch,
       };
     });
 

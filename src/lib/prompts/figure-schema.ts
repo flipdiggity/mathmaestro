@@ -22,6 +22,20 @@ export const FIGURE_KIND_HINTS: Record<string, string> = {
     'a function mapping diagram — emit figure.kind "function-mapping" with inputs, outputs, and mappings',
   'fraction-model':
     'a fraction model — emit figure.kind "fraction-model" with model, totalParts, and shadedParts',
+  angle:
+    'a drawn angle — emit figure.kind "angle" with degrees, a varied rotation, and shown=false for measure/solve tasks (optionally protractor: true)',
+  table:
+    'a data table — emit figure.kind "table" with headers and rows (null cells = blanks the student fills in)',
+  'tape-diagram':
+    'a tape/bar model — emit figure.kind "tape-diagram" with bars and labeled segments',
+  'double-number-line':
+    'a double number line — emit figure.kind "double-number-line" with paired values (null = blank to fill)',
+  clock: 'an analog clock — emit figure.kind "clock" with hour and minute',
+  'area-model':
+    'an area model — emit figure.kind "area-model" with rowParts/colParts (and cellLabels or blanks)',
+  'polygon-grid':
+    'a polygon on a unit grid — emit figure.kind "polygon-grid" with cols/rowsCount and vertices',
+  net: 'a net of a 3-D solid — emit figure.kind "net" with the solid and its dims',
 };
 
 export const FIGURE_SCHEMA_PROMPT = `
@@ -60,10 +74,15 @@ The "figure" field is a JSON object with a "kind" discriminator. Supported kinds
      "labels": [{ "position": "side", "ref": "AB", "text": "3 cm" }, { "position": "side", "ref": "AC", "text": "4 cm" }] }
    shapes: triangle, right-triangle, rectangle, square, circle, angle-pair,
    parallel-lines-transversal, prism-3d, cylinder-3d, cone-3d, sphere-3d, pyramid-3d.
-   parameters depend on shape: right-triangle {legA,legB}; rectangle/square {width,height};
-   circle {radius}; angle-pair {type: "complementary"|"supplementary"|"vertical"};
+   parameters depend on shape: right-triangle {legA,legB}; triangle {vertices:[{x,y}x3]}
+   (vary the vertices — scalene, obtuse, different orientations); rectangle/square
+   {width,height}; circle {radius};
+   angle-pair {type: "complementary"|"supplementary"|"vertical", angle1: <true measure of
+   the first angle in degrees>, rotation: <0-360, VARY every time>} — angle1 makes the
+   drawing match the actual measures in the problem; label refs "1","2",... name the
+   angular regions in order;
    3d shapes {width,height,depth} or {radius,height}. label.position is side|angle|vertex,
-   and ref names a side like "AB" or a vertex like "A".
+   and ref names a side like "AB", a vertex like "A", or a region like "1".
 
 4. data-display:
    { "kind": "data-display", "display": "box-plot", "fiveNumber": {"min":2,"q1":5,"median":8,"q3":12,"max":18} }
@@ -77,6 +96,37 @@ The "figure" field is a JSON object with a "kind" discriminator. Supported kinds
 
 6. function-mapping:
    { "kind": "function-mapping", "inputs": [1,2,3], "outputs": [2,4,6], "mappings": [{"from":0,"to":0},{"from":1,"to":1},{"from":2,"to":2}], "inputLabel": "x", "outputLabel": "y" }
+
+7. angle — a real drawn angle. VARY "rotation" (0-360) every time so no two angles look alike:
+   { "kind": "angle", "degrees": 137, "rotation": 25, "shown": false, "vertexLabel": "B", "rayLabels": ["A","C"] }
+   shown:false prints "?" (student measures/solves — put the measure in expectedAnswer);
+   shown:true prints the measure (given information). "protractor": true overlays a protractor
+   for measuring practice. "label" overrides the printed text (e.g. "x", "(2x+10) deg").
+
+8. table — real rendered table; null cells are blanks the student fills in:
+   { "kind": "table", "headers": ["x", "y"], "rows": [[-1, null], [0, -5], [2, null], [4, 3]], "caption": "y = 2x - 5" }
+   USE THIS for every "complete the table" problem — never describe a table in the question text.
+
+9. tape-diagram — bar model for part/whole and ratio word problems:
+   { "kind": "tape-diagram", "bars": [{ "label": "Maya", "segments": [{"label": "35", "units": 1, "shaded": true}, {"label": "?", "units": 1}] }], "totalLabel": "120 stickers in all" }
+
+10. double-number-line — ratios/rates/percents; null = blank to fill:
+   { "kind": "double-number-line", "topLabel": "miles", "bottomLabel": "hours", "pairs": [{"top":0,"bottom":0},{"top":150,"bottom":3},{"top":null,"bottom":5}] }
+
+11. clock — analog clock face (reading time, elapsed time):
+   { "kind": "clock", "hour": 4, "minute": 35 }
+
+12. area-model — partial products / distributive property:
+   { "kind": "area-model", "rowParts": [20, 3], "colParts": [40, 7], "cellLabels": [["800", null], [null, "21"]] }
+   (null cells = the student computes those partial products)
+
+13. polygon-grid — polygon on a unit grid for area/perimeter by counting:
+   { "kind": "polygon-grid", "cols": 10, "rowsCount": 8, "vertices": [{"x":1,"y":1},{"x":7,"y":1},{"x":7,"y":5},{"x":4,"y":7},{"x":1,"y":5}], "unitLabel": "1 square = 1 sq ft" }
+
+14. net — unfolded net of a solid (surface area):
+   { "kind": "net", "solid": "rectangular-prism", "dims": {"width": 6, "height": 3, "depth": 2}, "unit": "cm" }
+   solids: cube {side}; rectangular-prism {width,height,depth}; square-pyramid {base,slant};
+   triangular-prism {base,triHeight,length}; cylinder {radius,height}.
 
 WORKED EXAMPLES:
 - "Plot the point (3, -2) on the coordinate plane." ->

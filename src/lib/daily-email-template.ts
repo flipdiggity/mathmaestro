@@ -9,6 +9,13 @@ export interface ChildReport {
   yesterdayScore?: number | null;
   missedCount?: number;
   error?: string;
+  /** Study-plan status line, e.g. "31 topics left · 27 school days · on pace". */
+  planLine?: string | null;
+  planOnTrack?: boolean | null;
+  /** URL of the sheet's watch-first video page. */
+  watchUrl?: string;
+  /** How many sheets are still waiting to be photo-graded. */
+  ungradedCount?: number;
 }
 
 export function khanLink(topicName: string): string {
@@ -28,10 +35,22 @@ export function buildDailyEmailHtml(
       }
       const recap =
         r.yesterdayScore != null
-          ? `<p style="margin:4px 0;color:#374151">Yesterday's score: <strong>${Math.round(
+          ? `<p style="margin:4px 0;color:#374151">Last graded score: <strong>${Math.round(
               r.yesterdayScore
-            )}%</strong>${r.missedCount ? ` — added extra practice on ${r.missedCount} missed topic${r.missedCount === 1 ? '' : 's'}.` : '.'}</p>`
-          : `<p style="margin:4px 0;color:#6b7280">No graded worksheet from yesterday — sending the standard set.</p>`;
+            )}%</strong>${r.missedCount ? ` — extra practice added on ${r.missedCount} missed topic${r.missedCount === 1 ? '' : 's'}.` : '.'}</p>`
+          : `<p style="margin:4px 0;color:#6b7280">No graded worksheet yet — difficulty is escalating on schedule; photo-grade a sheet to fine-tune it.</p>`;
+      const planBadge = r.planLine
+        ? `<p style="margin:4px 0"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;background:${
+            r.planOnTrack === false ? '#fef2f2;color:#b91c1c' : '#f0fdf4;color:#15803d'
+          }">${r.planLine}</span></p>`
+        : '';
+      const watchLine = r.watchUrl
+        ? `<p style="margin:6px 0;color:#374151">🎬 <a href="${r.watchUrl}" style="color:#4f46e5">Watch-first videos for today's sheet</a> (also on the printed QR code).</p>`
+        : '';
+      const gradeNudge =
+        r.ungradedCount && r.ungradedCount >= 3
+          ? `<p style="margin:6px 0;color:#92400e;background:#fffbeb;padding:6px 10px;border-radius:8px;font-size:13px">📸 ${r.ungradedCount} completed sheets haven't been photo-graded — grading even one tunes difficulty and catches gaps.</p>`
+          : '';
       const topics = topicsByChild[r.name] ?? [];
       const topicList = topics
         .map(
@@ -40,15 +59,18 @@ export function buildDailyEmailHtml(
         )
         .join('');
       return `<h2 style="margin:18px 0 6px">${r.name}</h2>
+        ${planBadge}
         ${recap}
-        <p style="margin:8px 0 4px;color:#374151">Today's topics (tap for a refresher video):</p>
+        ${watchLine}
+        ${gradeNudge}
+        <p style="margin:8px 0 4px;color:#374151">Today's topics:</p>
         <ul style="margin:4px 0 0;padding-left:18px;color:#374151">${topicList}</ul>`;
     })
     .join('');
 
   return `<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto">
     <h1 style="font-size:20px;margin:0 0 4px">Math Maestro — ${date}</h1>
-    <p style="color:#6b7280;margin:0 0 8px">Today's worksheets are attached as PDFs. Print, have them work in pencil, then photograph and grade to shape tomorrow's set.</p>
+    <p style="color:#6b7280;margin:0 0 8px">Today's worksheets are attached. Have them scan the QR code and watch first, work in pencil, then photograph and grade to shape tomorrow's set.</p>
     ${sections}
     <p style="color:#9ca3af;font-size:12px;margin-top:24px">Generated automatically by Math Maestro.</p>
   </div>`;

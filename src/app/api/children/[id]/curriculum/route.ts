@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
-import { getTopicsForChild, getTopicById } from '@/lib/curriculum';
-import { orderedSequence, floorIndexFor, getStartFloor } from '@/lib/curriculum/sequencing';
+import { getTopicById } from '@/lib/curriculum';
+import { resolveCurriculumForChild } from '@/lib/curriculum/courses';
 
 const KNOWN = 80; // mastery >= this counts as "known/skip" (matches the sequencing frontier)
 
@@ -45,14 +45,12 @@ export async function GET(
     const child = await verifyChildOwnership(params.id, user.id);
     if (!child) return NextResponse.json({ error: 'Child not found' }, { status: 404 });
 
-    const topics = getTopicsForChild(child.grade, child.track, child.state, child.district);
+    const { topics, seq, floorIndex: floor, course } = resolveCurriculumForChild(child);
     const mastery = await prisma.topicMastery.findMany({ where: { childId: params.id } });
     const masteryById = new Map(mastery.map((m) => [m.topicId, m.mastery]));
     const scores = await topicScores(params.id);
 
     // The frontier: the next not-yet-mastered topic worksheets are focused on now.
-    const seq = orderedSequence(topics);
-    const floor = floorIndexFor(seq, getStartFloor(child.name, child.grade));
     let frontierId: string | null = null;
     for (let i = floor; i < seq.length; i++) {
       if ((masteryById.get(seq[i].id) ?? -1) < KNOWN) {
@@ -95,7 +93,12 @@ export async function GET(
       return { grade, periods };
     });
 
-    return NextResponse.json({ grade: child.grade, track: child.track, curriculum: result });
+    return NextResponse.json({
+      grade: child.grade,
+      track: child.track,
+      course: course ? { id: course.id, label: course.label } : null,
+      curriculum: result,
+    });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

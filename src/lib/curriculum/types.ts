@@ -21,7 +21,21 @@ export interface CurriculumTopic {
   order: number;            // Sequence within grade
   nineWeeks: 1 | 2 | 3 | 4; // Which 9-weeks grading period this topic belongs to
   requiresImage?: boolean;
-  imageType?: 'coordinate-plane' | 'number-line' | 'geometric-figure' | 'data-display' | 'function-mapping' | 'fraction-model';
+  imageType?:
+    | 'coordinate-plane'
+    | 'number-line'
+    | 'geometric-figure'
+    | 'data-display'
+    | 'function-mapping'
+    | 'fraction-model'
+    | 'angle'
+    | 'table'
+    | 'tape-diagram'
+    | 'double-number-line'
+    | 'clock'
+    | 'area-model'
+    | 'polygon-grid'
+    | 'net';
   bookRefs?: BookRef[];
 }
 

@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireUser } from '@/lib/auth';
+import { isAdminEmail } from '@/lib/admin';
 
 // One-off maintenance: remove duplicate child rows (same name added more than
 // once). Within each name group it keeps the child with the most worksheet
 // history and deletes the empty duplicates. A child with ANY worksheets is
-// never deleted. Guarded by CRON_SECRET (or ?secret= / open if unset).
-function authorized(request: NextRequest): boolean {
+// never deleted. Guarded by CRON_SECRET (or ?secret= / open if unset), or a
+// signed-in admin session (the admin console's Maintenance tab).
+async function authorized(request: NextRequest): Promise<boolean> {
   const secret = process.env.CRON_SECRET;
   if (!secret) return true;
   if (request.headers.get('authorization') === `Bearer ${secret}`) return true;
-  return request.nextUrl.searchParams.get('secret') === secret;
+  if (request.nextUrl.searchParams.get('secret') === secret) return true;
+  try {
+    const user = await requireUser();
+    return isAdminEmail(user.email);
+  } catch {
+    return false;
+  }
 }
 
 async function run() {
@@ -71,7 +80,7 @@ async function run() {
 }
 
 export async function GET(request: NextRequest) {
-  if (!authorized(request)) {
+  if (!(await authorized(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -68,7 +69,33 @@ function formatTrack(track: string): string {
   return track.charAt(0).toUpperCase() + track.slice(1);
 }
 
+interface PlanSummary {
+  course: { label: string } | null;
+  plan: {
+    advancedTopics: number;
+    totalTopics: number;
+    remaining: number;
+    onTrack: boolean | null;
+    planEnd: string | null;
+    frontierTopicName: string | null;
+  } | null;
+}
+
 export function ChildCard({ child }: { child: ChildData }) {
+  const [planSummary, setPlanSummary] = useState<PlanSummary | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/children/${child.id}/plan`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d) setPlanSummary({ course: d.course, plan: d.plan });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [child.id]);
+
   const gradedWorksheets = child.worksheets.filter((w) => w.gradingResult);
   const recentScores = gradedWorksheets
     .slice(0, 5)
@@ -115,6 +142,30 @@ export function ChildCard({ child }: { child: ChildData }) {
       </CardHeader>
 
       <CardContent className="flex-1 space-y-4">
+        {/* Course + plan progress */}
+        {planSummary?.plan && (
+          <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-indigo-900 truncate">
+                {planSummary.course?.label ?? 'Learning plan'}
+              </p>
+              {planSummary.plan.onTrack != null && (
+                <Badge
+                  className={`text-[10px] shrink-0 ${planSummary.plan.onTrack ? 'bg-green-600' : 'bg-red-600'}`}
+                >
+                  {planSummary.plan.onTrack ? 'On pace' : 'Behind'}
+                </Badge>
+              )}
+            </div>
+            <p className="text-[11px] text-indigo-800/80 mt-0.5">
+              {planSummary.plan.advancedTopics}/{planSummary.plan.totalTopics} topics
+              {planSummary.plan.frontierTopicName
+                ? ` · next: ${planSummary.plan.frontierTopicName}`
+                : ''}
+            </p>
+          </div>
+        )}
+
         {/* Recent Scores */}
         <div>
           <p className="text-sm font-medium text-slate-700 mb-2">Recent Scores</p>

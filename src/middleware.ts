@@ -3,8 +3,8 @@
  *
  * personal — everything passes through (single-household tool).
  * saas — Clerk protects everything except the landing page, auth pages,
- *   Stripe webhooks, the cron endpoint (guarded by CRON_SECRET), and the
- *   version probe.
+ *   Stripe webhooks, the cron endpoint (guarded by CRON_SECRET), the public
+ *   support-ticket endpoint, and the version probe.
  */
 import { NextResponse } from 'next/server';
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
@@ -14,8 +14,14 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/support',
+  '/terms',
+  '/privacy',
+  // Watch-first video pages are reached from printed QR codes — no sign-in.
+  '/watch(.*)',
   '/api/webhooks(.*)',
   '/api/cron(.*)',
+  '/api/support',
   '/api/version',
 ]);
 

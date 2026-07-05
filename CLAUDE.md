@@ -1,32 +1,52 @@
 # MathMaestro — Session Context
 
 ## What This App Is
-AI-powered math worksheet generator. Kids get personalized worksheets aligned to Texas TEKS (Eanes ISD pacing), complete them by hand, parents photograph the completed work, and AI grades it. Spaced repetition + a sequential curriculum frontier drive topic selection.
+AI-powered math worksheet generator. Kids get personalized printed worksheets aligned to Texas TEKS (Eanes ISD pacing + courses), watch curated intro videos via a QR code on the sheet, complete the work by hand, parents photograph it, and AI grades it (including drawn answers). An adaptive engine drives topic selection, difficulty, and variety — and keeps progressing even when sheets go ungraded.
 
-**Tech stack:** Next.js 14, Prisma (Neon Postgres), Anthropic Claude API (claude-sonnet-4-6 for generation + vision grading), @react-pdf/renderer, Resend (daily email), deployed on Vercel. Clerk + Stripe exist but are dormant (see App modes).
+**Tech stack:** Next.js 14, Prisma (Neon Postgres), Anthropic Claude API (`claude-sonnet-5` for generation + vision grading; `ANTHROPIC_MODEL`/`ANTHROPIC_EFFORT` env overrides), @react-pdf/renderer (+ `qrcode`), Resend (daily email), deployed on Vercel. Clerk + Stripe exist but are dormant (see App modes).
 
 **Live URL:** https://mathmaestro-tan.vercel.app
 **Repo:** https://github.com/flipdiggity/mathmaestro
 
-## App modes (June 10, 2026)
+## App modes
 `NEXT_PUBLIC_APP_MODE` env var, build-time inlined (`src/lib/mode.ts`):
-- **personal** (default, currently live) — no auth, no billing. One local user (`local-felipe`) owns the seeded kids (child ids literally `eliana`, `mylo`). The ENTIRE site and API are publicly reachable. Name-keyed tweaks apply: Eliana's start floor (grade 7, order 17) and per-kid diagnostic probes.
-- **saas** — Clerk auth (middleware + `src/lib/auth.ts`; admin emails adopt the local user's children on first sign-in), Stripe pay-per-use (5 free generates + 5 free grades, then card on file; `ADMIN_EMAILS` bypass), public landing page, `/onboarding` wizard, per-family daily emails. To flip: re-add CLERK_*/STRIPE_*/ADMIN_EMAILS/NEXT_PUBLIC_SUPPORT_EMAIL env vars on Vercel (they were removed), set the flag, redeploy.
+- **personal** (default, currently live) — no auth, no billing. One local user (`local-felipe`) owns the seeded kids (child ids literally `eliana`, `mylo`). The ENTIRE site and API are publicly reachable.
+- **saas** — Clerk auth, Stripe pay-per-use (5 free generates + 5 free grades; `ADMIN_EMAILS` bypass), public landing page (rewritten July 2026: Eanes-specific marketing at `src/components/landing/landing-page.tsx`), `/onboarding`, per-family daily emails, support center (`/support` + `POST /api/support` → SupportTicket), `/terms`, `/privacy`. To flip: re-add CLERK_*/STRIPE_*/ADMIN_EMAILS/NEXT_PUBLIC_SUPPORT_EMAIL env vars on Vercel, set the flag, redeploy.
 
 ## Deployment
 - `git push` on `summer-rebuild` → Vercel auto-deploys production (~1 min). That is the ONLY deploy path; `npx vercel --prod` has an expired token.
 - Verify with `GET /api/version` (commit SHA, branch, env-readiness booleans) or the Vercel Deployments page.
-- `npm run db:push` only when prisma/schema.prisma changes.
+- `npm run db:push` only when prisma/schema.prisma changes — and it must land BEFORE deploying code that reads new columns (Prisma selects all scalar fields; missing columns = runtime 500s).
+
+## Adaptive engine (July 2026 rebuild — the important part)
+The old engine only adapted via photo-graded mastery; almost nothing was graded, so the frontier froze and sheets repeated the same 4 topics at difficulty 1-2 for weeks. The rebuilt engine adapts on TWO signals:
+
+- **Serves** (`src/lib/adaptive.ts`): every generated sheet records per topic: `timesServed`, `servesSinceGrade`, recent question FORMATS, recent FIGURE kinds (TopicMastery columns). Repeat exposure escalates effective difficulty (+0.5/serve, capped) and rotates formats/figures even with zero grading.
+- **Grades**: photo grading updates a per-topic difficulty LADDER 1..4 (`difficultyLevel`: ≥85% at served level → +1, <60% → −1) and stores wrong answers (`missesJson`) that the next sheet re-attacks with fresh numbers. Mastery EMA (`spaced-repetition.ts # updateMastery`) unchanged.
+
+**Advance rule** (`sequencing.ts # selectSequential`): a topic is advanced past when mastery ≥80 OR served ≥ `servesToAdvance` times without graded weakness (graded <60 holds it). Ungraded-advanced topics cycle back later as "unverified review". Parent skip-marks (mastery=100, timesPracticed=0) never resurface.
+
+**Plans** (`src/lib/plan.ts`): `Child.planEndDate` (falls back to targetTestDate) → weekdays left vs topics remaining → `paceNeeded`, `servesToAdvance` (2-3), `numCurrent` (3-6). Verified by simulation: Eliana's 66 topics finish in 26 weekdays at 2 practice days/topic. Plan status API: `GET/PATCH /api/children/[id]/plan`; UI on `/plan` + dashboard child cards.
+
+**Courses** (`src/lib/curriculum/courses.ts`): named presets (e.g. `eanes-m8-accel-g6` = 2nd half Math 7 + all Math 8, engine grade 7/accelerated, floor 7.17, displayGrade 6; `eanes-g4-accel-ready` = G4 + G5 preview). `Child.courseId` supersedes (grade, track) resolution via `resolveCurriculumForChild` — use that helper everywhere, never raw `getTopicsForChild`, so the mastery pool stays consistent.
+
+**Difficulty scale is 1..4** (Foundation/On-level/Rigorous/Challenge — `DIFFICULTY_RUBRIC` in adaptive.ts). Question `format` field from `QUESTION_FORMATS` (10 formats, rotation memory per topic).
 
 ## Generation architecture (all paths share one core)
-`src/lib/worksheet-generation.ts # generateAdaptiveWorksheet` is used by:
-- `POST /api/generate` (single sheet — note: route still has an older inline copy, behaviorally equivalent)
-- `POST /api/generate-batch` (multi-day; `windowOffset` slides the current-topic window ONE topic per day — do NOT go back to excluding prior days' topics, that raced 3-6 topics/day into untaught material)
-- `GET/POST /api/cron/daily-email` (Vercel cron `0 11 * * 1-5` UTC = 6am CT; supports `?dryRun=1` and `?secret=` manual trigger)
+`src/lib/worksheet-generation.ts # generateAdaptiveWorksheet` is used by `POST /api/generate` (now a thin wrapper — the old inline copy is gone), `POST /api/generate-batch`, and `GET/POST /api/cron/daily-email` (Vercel cron `0 11 * * 1-5` UTC = 6am CT; `?dryRun=1`, `?secret=` manual trigger; per-child generation runs in PARALLEL — Sonnet 5 takes ~2-4 min/sheet with adaptive thinking).
 
-Topic selection: `src/lib/curriculum/sequencing.ts`. Frontier = first unmastered topic past the start floor. Mastered ≥80; skip-marked topics are mastery=100/timesPracticed=0 and NEVER resurface; spaced "maintenance" review of graded-mastered topics expands 1→2→4→…→30 days, ≤1 topic and ≤10% of questions per sheet, retired at ≥95% with 4+ practices. Selection ignores TopicMastery rows whose topicId isn't in the current curriculum pool (older ID schemes left orphans; `POST /api/admin/cleanup-mastery` deletes them).
+- Batch progression: the serve-advance rule does the work now (windowOffset is deprecated — do NOT reintroduce per-day topic exclusion, which raced 3-6 topics/day into untaught material).
+- Prompt v2 (`prompts/generate-worksheet.ts`): exact per-topic question counts (`allocateQuestions`, maintenance ≤10%), per-topic difficulty mixes, format rotation notes, figure quotas + rotation, MISSED-LAST-TIME retry blocks, summer plan context. Sonnet 5: no `temperature` (rejected), adaptive thinking budgets inside max_tokens (32K generation / 16K grading), streaming via `messages.stream().finalMessage()`.
+- Figures: 14 kinds rendered by `pdf/worksheet-template.tsx` — the original 6 + `angle` (rotation + optional protractor), `table`, `tape-diagram`, `double-number-line`, `clock`, `area-model`, `polygon-grid`, `net`. Angle-pair now takes real measures + rotation. Smoke test: `npx tsx scripts/new-figures-test.tsx`.
+- "Watch first": every sheet's PDF gets a QR box (→ `/watch/[worksheetId]`, public route) + top video titles. Curated topic→video map for all 172 topics in `curriculum/videos.ts` (KA course/unit URLs + search fallbacks that can't 404).
+- E2E generation smoke test: `npx tsx --env-file=.env scripts/genv2-smoke-test.ts` (hits the live model, ~$0.15).
 
-## Known issues / state (June 10, 2026)
-- The daily cron has NEVER successfully written a worksheet: per-child generation fails inside the cron's try/catch and the error used to be visible only in the emailed report. As of commit "Harden daily generation…" failures are console.error'd (check Vercel function logs), generation retries once, maxTokens 16384. Root cause not yet confirmed — diagnose via logs after next run.
+## Product layer
+- `/admin` console: overview cards (incl. cron-health chip), Users (credits + refunds), Tickets, Audit log, Maintenance tabs. APIs under `/api/admin/*` (tickets, refund, audit, overview). Refunds write negative-cost UsageRecords of the refunded type (sign-counting in `billing.ts # getUsageCounts`); optional Stripe refund when env present. Everything audit-logged (`AuditLog` model).
+- Support: `POST /api/support` (public) → `SupportTicket` + best-effort email to `SUPPORT_INBOX_EMAIL || DAILY_EMAIL_TO`.
+
+## Known issues / state (July 4, 2026)
+- The daily cron works (fixed pre-July; sheets exist through Jul 3). The "cron never wrote a worksheet" note from June 10 is obsolete.
+- PENDING at end of July 4 session: `npm run db:push` (additive: Child.courseId/displayGrade/planEndDate, TopicMastery adaptive columns, AuditLog, SupportTicket) then `npx tsx scripts/setup-summer-plans.ts` (sets both kids' courses + Aug-12 plan), then push to deploy. Push code only AFTER the DB migration.
+- Old SaaS-era duplicate children (cmm… ids under felipefernandes@hey.com) still in DB; harmless (cron scoped to local-felipe), dedupe via admin Maintenance tab.
 - Grading old worksheets (pre-curriculum-change) writes mastery rows under old topic IDs; harmless (filtered), cleanup endpoint exists.
-- June 10: bad June-8 batch sheets (Wed–Fri) for Mylo were deleted from the DB; fresh frontier-correct sheets were generated for both kids for Wednesday June 10.

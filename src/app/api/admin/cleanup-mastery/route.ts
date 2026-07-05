@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
-import { getTopicsForChild } from '@/lib/curriculum';
+import { resolveCurriculumForChild } from '@/lib/curriculum/courses';
 
 // Deletes TopicMastery rows whose topicId no longer exists in the child's
 // current curriculum pool (leftovers from earlier curriculum ID schemes, e.g.
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const results: Array<{ child: string; deleted: number; kept: number }> = [];
     for (const child of children) {
       const pool = new Set(
-        getTopicsForChild(child.grade, child.track, child.state, child.district).map((t) => t.id)
+        resolveCurriculumForChild(child).topics.map((t) => t.id)
       );
       const rows = await prisma.topicMastery.findMany({ where: { childId: child.id } });
       const orphanIds = rows.filter((r) => !pool.has(r.topicId)).map((r) => r.id);

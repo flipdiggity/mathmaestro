@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
 import { anthropic } from '@/lib/anthropic';
-import { getTopicsForChild } from '@/lib/curriculum';
+import { resolveCurriculumForChild } from '@/lib/curriculum/courses';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Child not found' }, { status: 404 });
     }
 
-    const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
+    const allTopics = resolveCurriculumForChild(child).topics;
     const topicList = allTopics
       .map((t) => `- ${t.id}: ${t.name} (${t.strand}) — ${t.description}`)
       .join('\n');

@@ -13,6 +13,7 @@ import {
   Polyline,
   Path,
   G,
+  Image,
 } from '@react-pdf/renderer';
 import {
   Question,
@@ -23,6 +24,14 @@ import {
   DataDisplayFigure,
   FractionModelFigure,
   FunctionMappingFigure,
+  AngleFigure,
+  TableFigure,
+  TapeDiagramFigure,
+  DoubleNumberLineFigure,
+  ClockFigure,
+  AreaModelFigure,
+  PolygonGridFigure,
+  NetFigure,
 } from '@/types';
 import { BookRef } from '@/lib/curriculum/types';
 
@@ -134,6 +143,26 @@ const styles = StyleSheet.create({
   figureContainer: { marginTop: 4, marginBottom: 8, alignItems: 'center' },
   figureCaption: { fontSize: 8, color: '#666', marginTop: 2 },
   bookRefLine: { fontSize: 8, color: '#6366f1', marginTop: 3 },
+  watchBox: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    padding: 10,
+    backgroundColor: '#fefce8',
+    borderLeftWidth: 3,
+    borderLeftColor: '#eab308',
+    alignItems: 'center',
+  },
+  watchLeft: { flex: 1, paddingRight: 10 },
+  watchHeader: {
+    fontSize: 11,
+    fontFamily: 'Helvetica-Bold',
+    color: '#854d0e',
+    marginBottom: 4,
+  },
+  watchRow: { fontSize: 9, color: '#1f2937', marginBottom: 2, lineHeight: 1.35 },
+  watchUrl: { fontSize: 8, color: '#6b7280', marginTop: 3 },
+  watchQr: { width: 64, height: 64 },
+  watchQrLabel: { fontSize: 7, color: '#854d0e', textAlign: 'center', marginTop: 1 },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -713,39 +742,694 @@ function renderParallelLinesTransversal(fig: GeometricFigure) {
   );
 }
 
+// Angle pairs with REAL parameterized measures + rotation, so the figure
+// matches the problem and never looks the same twice. parameters:
+// { type, angle1?, angle2?, rotation? } — angle1 is the first region's measure
+// (falls back to sensible defaults), rotation spins the whole figure.
 function renderAnglePair(fig: GeometricFigure) {
-  const w = 220;
-  const h = 140;
+  const w = 230;
+  const h = 150;
   const cx = w / 2;
-  const cy = h - 30;
-  const r = 60;
-  const params = fig.parameters as { type?: 'complementary' | 'supplementary' | 'vertical' };
+  const cy = h / 2 + 10;
+  const r = 62;
+  const params = fig.parameters as {
+    type?: 'complementary' | 'supplementary' | 'vertical' | 'adjacent';
+    angle1?: number;
+    angle2?: number;
+    rotation?: number;
+  };
   const type = params.type ?? 'supplementary';
+  const rot = params.rotation ?? 0;
+  const a1 = params.angle1 ?? (type === 'complementary' ? 35 : type === 'vertical' ? 50 : 55);
 
-  let rays: Array<{ angle: number }> = [];
+  // Math-convention angles (CCW, degrees); SVG y flips so we negate sin.
+  const pt = (angDeg: number, radius: number) => {
+    const rad = (angDeg * Math.PI) / 180;
+    return { x: cx + Math.cos(rad) * radius, y: cy - Math.sin(rad) * radius };
+  };
+
+  // Ray directions + the angular regions labels refer to ("1", "2", ...).
+  let rays: number[];
+  let regions: Array<[number, number]>;
   if (type === 'complementary') {
-    rays = [{ angle: 0 }, { angle: -45 }, { angle: -90 }];
+    rays = [rot, rot + a1, rot + 90];
+    regions = [[rot, rot + a1], [rot + a1, rot + 90]];
   } else if (type === 'vertical') {
-    rays = [{ angle: 30 }, { angle: 30 + 180 }, { angle: -40 }, { angle: -40 + 180 }];
+    rays = [rot, rot + a1, rot + 180, rot + a1 + 180];
+    regions = [
+      [rot, rot + a1],
+      [rot + a1, rot + 180],
+      [rot + 180, rot + a1 + 180],
+      [rot + a1 + 180, rot + 360],
+    ];
   } else {
-    rays = [{ angle: 0 }, { angle: -40 }, { angle: -180 }];
+    // supplementary / adjacent on a line
+    rays = [rot, rot + a1, rot + 180];
+    regions = [[rot, rot + a1], [rot + a1, rot + 180]];
+  }
+
+  const els: React.ReactElement[] = [];
+  rays.forEach((ang, i) => {
+    const end = pt(ang, r);
+    els.push(
+      <Line key={`ray${i}`} x1={cx} y1={cy} x2={end.x} y2={end.y}
+        style={{ stroke: '#1e40af', strokeWidth: 1.3 }} />,
+    );
+  });
+  // Small arcs marking each region
+  regions.forEach(([from, to], i) => {
+    const arcR = 14 + i * 5;
+    const s = pt(from, arcR);
+    const e = pt(to, arcR);
+    const large = Math.abs(to - from) > 180 ? 1 : 0;
+    els.push(
+      <Path key={`arc${i}`}
+        d={`M ${s.x} ${s.y} A ${arcR} ${arcR} 0 ${large} 0 ${e.x} ${e.y}`}
+        style={{ fill: 'none', stroke: '#7c3aed', strokeWidth: 0.8 }} />,
+    );
+  });
+  // Region labels on bisectors: label ref "1" → first region, etc.
+  (fig.labels ?? []).forEach((lbl, i) => {
+    const idx = Math.max(0, Math.min(regions.length - 1, parseInt(lbl.ref, 10) - 1 || i));
+    const [from, to] = regions[idx];
+    const mid = pt((from + to) / 2, 34 + (idx % 2) * 6);
+    els.push(
+      <SvgText key={`lbl${i}`} x={mid.x} y={mid.y + 2} fontSize={8} fill="#7c3aed" textAnchor="middle">
+        {lbl.text}
+      </SvgText>,
+    );
+  });
+  els.push(<Circle key="vtx" cx={cx} cy={cy} r={1.6} style={{ fill: '#1e40af' }} />);
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
+      </Svg>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Single angle (with optional protractor) — measure practice, angle reasoning
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderAngle(fig: AngleFigure) {
+  const w = 230;
+  const h = fig.protractor ? 170 : 140;
+  const cx = w / 2;
+  const cy = fig.protractor ? h - 40 : h / 2 + 14;
+  const r = 66;
+  const rot = fig.rotation ?? 0;
+  const deg = fig.degrees;
+
+  const pt = (angDeg: number, radius: number) => {
+    const rad = (angDeg * Math.PI) / 180;
+    return { x: cx + Math.cos(rad) * radius, y: cy - Math.sin(rad) * radius };
+  };
+
+  const els: React.ReactElement[] = [];
+
+  // Protractor overlay: half-disc aligned with the base ray.
+  if (fig.protractor) {
+    const outer = 58;
+    const inner = 46;
+    const s = pt(rot, outer);
+    const e = pt(rot + 180, outer);
+    els.push(
+      <Path key="prot"
+        d={`M ${e.x} ${e.y} A ${outer} ${outer} 0 0 1 ${s.x} ${s.y}`}
+        style={{ fill: '#f8fafc', stroke: '#9ca3af', strokeWidth: 0.8 }} />,
+      <Line key="protbase" x1={e.x} y1={e.y} x2={s.x} y2={s.y}
+        style={{ stroke: '#9ca3af', strokeWidth: 0.8 }} />,
+    );
+    for (let t = 0; t <= 180; t += 10) {
+      const o = pt(rot + t, outer);
+      const inn = pt(rot + t, t % 30 === 0 ? inner - 4 : inner);
+      els.push(
+        <Line key={`pt${t}`} x1={inn.x} y1={inn.y} x2={o.x} y2={o.y}
+          style={{ stroke: '#9ca3af', strokeWidth: t % 30 === 0 ? 0.8 : 0.4 }} />,
+      );
+      if (t % 30 === 0) {
+        const lp = pt(rot + t, inner - 11);
+        els.push(
+          <SvgText key={`ptl${t}`} x={lp.x} y={lp.y + 2} fontSize={5} fill="#6b7280" textAnchor="middle">
+            {String(t)}
+          </SvgText>,
+        );
+      }
+    }
+  }
+
+  // The two rays
+  const end1 = pt(rot, r);
+  const end2 = pt(rot + deg, r);
+  els.push(
+    <Line key="r1" x1={cx} y1={cy} x2={end1.x} y2={end1.y}
+      style={{ stroke: '#1e40af', strokeWidth: 1.4 }} />,
+    <Line key="r2" x1={cx} y1={cy} x2={end2.x} y2={end2.y}
+      style={{ stroke: '#1e40af', strokeWidth: 1.4 }} />,
+    <Circle key="v" cx={cx} cy={cy} r={1.8} style={{ fill: '#1e40af' }} />,
+  );
+
+  // Arc marking the angle (right-angle square for 90°)
+  if (Math.abs(deg - 90) < 0.01) {
+    const a = pt(rot, 12);
+    const b = pt(rot + 45, 16.97);
+    const c = pt(rot + 90, 12);
+    els.push(
+      <Path key="sq" d={`M ${a.x} ${a.y} L ${b.x} ${b.y} L ${c.x} ${c.y}`}
+        style={{ fill: 'none', stroke: '#7c3aed', strokeWidth: 0.9 }} />,
+    );
+  } else {
+    const arcR = 16;
+    const s = pt(rot, arcR);
+    const e = pt(rot + deg, arcR);
+    const large = deg > 180 ? 1 : 0;
+    els.push(
+      <Path key="arc" d={`M ${s.x} ${s.y} A ${arcR} ${arcR} 0 ${large} 0 ${e.x} ${e.y}`}
+        style={{ fill: 'none', stroke: '#7c3aed', strokeWidth: 0.9 }} />,
+    );
+  }
+
+  // Measure label on the bisector (or "?" for solve/measure tasks)
+  const labelText = fig.label ?? (fig.shown ? `${Math.round(deg)} deg` : '?');
+  const lp = pt(rot + deg / 2, deg < 40 ? 40 : 30);
+  els.push(
+    <SvgText key="ml" x={lp.x} y={lp.y + 2} fontSize={8} fill="#7c3aed" textAnchor="middle">
+      {labelText}
+    </SvgText>,
+  );
+
+  // Vertex / ray endpoint labels
+  if (fig.vertexLabel) {
+    const vp = pt(rot + deg / 2 + 180, 10);
+    els.push(
+      <SvgText key="vl" x={vp.x} y={vp.y + 3} fontSize={8} fontFamily="Helvetica-Bold" fill="#1e40af" textAnchor="middle">
+        {fig.vertexLabel}
+      </SvgText>,
+    );
+  }
+  if (fig.rayLabels) {
+    const p1 = pt(rot, r + 8);
+    const p2 = pt(rot + deg, r + 8);
+    els.push(
+      <SvgText key="rl1" x={p1.x} y={p1.y + 3} fontSize={8} fill="#1e40af" textAnchor="middle">
+        {fig.rayLabels[0]}
+      </SvgText>,
+      <SvgText key="rl2" x={p2.x} y={p2.y + 3} fontSize={8} fill="#1e40af" textAnchor="middle">
+        {fig.rayLabels[1]}
+      </SvgText>,
+    );
   }
 
   return (
     <View style={styles.figureContainer}>
       <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        {rays.map((ray, i) => {
-          const rad = (ray.angle * Math.PI) / 180;
-          const x2 = cx + Math.cos(rad) * r;
-          const y2 = cy + Math.sin(rad) * r;
-          return <Line key={i} x1={cx} y1={cy} x2={x2} y2={y2}
-            style={{ stroke: '#1e40af', strokeWidth: 1.2 }} />;
-        })}
-        {(fig.labels ?? []).map((lbl, i) => (
-          <SvgText key={i} x={cx + (i - 0.5) * 18} y={cy - 14} fontSize={8} fill="#7c3aed">
-            {lbl.text}
-          </SvgText>
-        ))}
+        <G>{els}</G>
+      </Svg>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Table — headers + rows; null cells are blanks for the student to fill in
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderTable(fig: TableFigure) {
+  const cols = Math.max(fig.headers.length, 1);
+  const colW = Math.min(90, Math.max(46, 320 / cols));
+  const w = colW * cols + 2;
+  const rowH = 20;
+  const h = rowH * (fig.rows.length + 1) + (fig.caption ? 14 : 0) + 2;
+
+  const els: React.ReactElement[] = [];
+  // Header row
+  fig.headers.forEach((hd, c) => {
+    els.push(
+      <Rect key={`h${c}`} x={1 + c * colW} y={1} width={colW} height={rowH}
+        style={{ fill: '#eef2ff', stroke: '#1e40af', strokeWidth: 0.8 }} />,
+      <SvgText key={`ht${c}`} x={1 + c * colW + colW / 2} y={1 + rowH / 2 + 3}
+        fontSize={8} fontFamily="Helvetica-Bold" fill="#3730a3" textAnchor="middle">
+        {asciifyMath(String(hd))}
+      </SvgText>,
+    );
+  });
+  // Body
+  fig.rows.forEach((row, ri) => {
+    for (let c = 0; c < cols; c++) {
+      const v = row[c];
+      const y = 1 + (ri + 1) * rowH;
+      els.push(
+        <Rect key={`c${ri}-${c}`} x={1 + c * colW} y={y} width={colW} height={rowH}
+          style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 0.6 }} />,
+      );
+      if (v !== null && v !== undefined && String(v) !== '') {
+        els.push(
+          <SvgText key={`ct${ri}-${c}`} x={1 + c * colW + colW / 2} y={y + rowH / 2 + 3}
+            fontSize={8} fill="#111827" textAnchor="middle">
+            {asciifyMath(String(v))}
+          </SvgText>,
+        );
+      }
+    }
+  });
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
+      </Svg>
+      {fig.caption ? <Text style={styles.figureCaption}>{asciifyMath(fig.caption)}</Text> : null}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tape diagram (bar model) — part/whole word problems, ratios
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderTapeDiagram(fig: TapeDiagramFigure) {
+  const labelW = fig.bars.some((b) => b.label) ? 52 : 6;
+  const barAreaW = 250;
+  const barH = 24;
+  const gap = 12;
+  const topPad = fig.totalLabel ? 24 : 6;
+  const w = labelW + barAreaW + 10;
+  const h = topPad + fig.bars.length * (barH + gap);
+
+  const els: React.ReactElement[] = [];
+  const maxUnits = Math.max(
+    ...fig.bars.map((b) => b.segments.reduce((a, s) => a + (s.units ?? 1), 0)),
+    1
+  );
+
+  fig.bars.forEach((bar, bi) => {
+    const y = topPad + bi * (barH + gap);
+    if (bar.label) {
+      els.push(
+        <SvgText key={`bl${bi}`} x={labelW - 6} y={y + barH / 2 + 3} fontSize={8} fill="#374151" textAnchor="end">
+          {bar.label}
+        </SvgText>,
+      );
+    }
+    let x = labelW;
+    bar.segments.forEach((seg, si) => {
+      const segW = ((seg.units ?? 1) / maxUnits) * barAreaW;
+      els.push(
+        <Rect key={`s${bi}-${si}`} x={x} y={y} width={segW} height={barH}
+          style={{
+            fill: seg.shaded ? '#dbeafe' : '#ffffff',
+            stroke: '#1e40af',
+            strokeWidth: 1,
+          }} />,
+        <SvgText key={`st${bi}-${si}`} x={x + segW / 2} y={y + barH / 2 + 3}
+          fontSize={8} fill="#111827" textAnchor="middle">
+          {asciifyMath(seg.label)}
+        </SvgText>,
+      );
+      x += segW;
+    });
+    // Total bracket over the FIRST bar
+    if (bi === 0 && fig.totalLabel) {
+      const totalW = x - labelW;
+      els.push(
+        <Line key="tb" x1={labelW} y1={y - 8} x2={labelW + totalW} y2={y - 8}
+          style={{ stroke: '#6b7280', strokeWidth: 0.8 }} />,
+        <Line key="tb1" x1={labelW} y1={y - 8} x2={labelW} y2={y - 4}
+          style={{ stroke: '#6b7280', strokeWidth: 0.8 }} />,
+        <Line key="tb2" x1={labelW + totalW} y1={y - 8} x2={labelW + totalW} y2={y - 4}
+          style={{ stroke: '#6b7280', strokeWidth: 0.8 }} />,
+        <SvgText key="tbl" x={labelW + totalW / 2} y={y - 12} fontSize={8} fill="#374151" textAnchor="middle">
+          {asciifyMath(fig.totalLabel)}
+        </SvgText>,
+      );
+    }
+  });
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
+      </Svg>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Double number line — ratios, unit rates, percents
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderDoubleNumberLine(fig: DoubleNumberLineFigure) {
+  const labelW = 58;
+  const lineW = 250;
+  const w = labelW + lineW + 20;
+  const h = 78;
+  const topY = 22;
+  const botY = 56;
+  const n = Math.max(fig.pairs.length, 2);
+  const px = (i: number) => labelW + (i / (n - 1)) * lineW;
+
+  const els: React.ReactElement[] = [];
+  [
+    { y: topY, label: fig.topLabel },
+    { y: botY, label: fig.bottomLabel },
+  ].forEach(({ y, label }, li) => {
+    els.push(
+      <Line key={`l${li}`} x1={labelW - 4} y1={y} x2={labelW + lineW + 8} y2={y}
+        style={{ stroke: '#374151', strokeWidth: 1 }} />,
+      <Polygon key={`la${li}`}
+        points={`${labelW + lineW + 14},${y} ${labelW + lineW + 8},${y - 3} ${labelW + lineW + 8},${y + 3}`}
+        style={{ fill: '#374151' }} />,
+      <SvgText key={`ll${li}`} x={labelW - 10} y={y + 3} fontSize={8} fill="#374151" textAnchor="end">
+        {label}
+      </SvgText>,
+    );
+  });
+  fig.pairs.forEach((pair, i) => {
+    const x = px(i);
+    [
+      { y: topY, v: pair.top, dy: -7 },
+      { y: botY, v: pair.bottom, dy: 14 },
+    ].forEach(({ y, v, dy }, pi) => {
+      els.push(
+        <Line key={`t${i}-${pi}`} x1={x} y1={y - 4} x2={x} y2={y + 4}
+          style={{ stroke: '#374151', strokeWidth: 1 }} />,
+      );
+      if (v === null || v === undefined || String(v) === '') {
+        // Blank box for the student to fill in
+        els.push(
+          <Rect key={`b${i}-${pi}`} x={x - 10} y={y + (dy < 0 ? -18 : 7)} width={20} height={12}
+            style={{ fill: '#ffffff', stroke: '#9ca3af', strokeWidth: 0.7, strokeDasharray: '2 1.5' }} />,
+        );
+      } else {
+        els.push(
+          <SvgText key={`v${i}-${pi}`} x={x} y={y + dy} fontSize={8} fill="#111827" textAnchor="middle">
+            {asciifyMath(String(v))}
+          </SvgText>,
+        );
+      }
+    });
+  });
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
+      </Svg>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analog clock — reading time, elapsed time
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderClock(fig: ClockFigure) {
+  const w = 130;
+  const h = 130;
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = 54;
+
+  const els: React.ReactElement[] = [
+    <Circle key="face" cx={cx} cy={cy} r={r}
+      style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 1.6 }} />,
+    <Circle key="hub" cx={cx} cy={cy} r={2} style={{ fill: '#1e40af' }} />,
+  ];
+  for (let i = 1; i <= 12; i++) {
+    const ang = ((i * 30 - 90) * Math.PI) / 180;
+    const xo = cx + Math.cos(ang) * (r - 5);
+    const yo = cy + Math.sin(ang) * (r - 5);
+    const xi = cx + Math.cos(ang) * (r - 10);
+    const yi = cy + Math.sin(ang) * (r - 10);
+    els.push(
+      <Line key={`t${i}`} x1={xi} y1={yi} x2={xo} y2={yo}
+        style={{ stroke: '#374151', strokeWidth: 1 }} />,
+      <SvgText key={`n${i}`}
+        x={cx + Math.cos(ang) * (r - 17)} y={cy + Math.sin(ang) * (r - 17) + 2.5}
+        fontSize={7} fill="#374151" textAnchor="middle">
+        {String(i)}
+      </SvgText>,
+    );
+  }
+  const minAng = ((fig.minute * 6 - 90) * Math.PI) / 180;
+  const hourAng = (((fig.hour % 12) * 30 + fig.minute * 0.5 - 90) * Math.PI) / 180;
+  els.push(
+    <Line key="hh" x1={cx} y1={cy}
+      x2={cx + Math.cos(hourAng) * (r - 26)} y2={cy + Math.sin(hourAng) * (r - 26)}
+      style={{ stroke: '#111827', strokeWidth: 2.4 }} />,
+    <Line key="mh" x1={cx} y1={cy}
+      x2={cx + Math.cos(minAng) * (r - 13)} y2={cy + Math.sin(minAng) * (r - 13)}
+      style={{ stroke: '#111827', strokeWidth: 1.4 }} />,
+  );
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
+      </Svg>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Area model (partial products / distributive) — rows × cols partition
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderAreaModel(fig: AreaModelFigure) {
+  const asNum = (v: number | string) => (typeof v === 'number' ? v : NaN);
+  const rowVals = fig.rowParts.map(asNum);
+  const colVals = fig.colParts.map(asNum);
+  const rowsNumeric = rowVals.every((v) => Number.isFinite(v) && v > 0);
+  const colsNumeric = colVals.every((v) => Number.isFinite(v) && v > 0);
+
+  const totalW = 240;
+  const totalH = 120;
+  const labelPad = 22;
+
+  // Proportional partition when numeric (min 22px so labels fit), equal otherwise.
+  const partSizes = (parts: Array<number | string>, vals: number[], numeric: boolean, span: number) => {
+    if (!numeric) return parts.map(() => span / parts.length);
+    const sum = vals.reduce((a, b) => a + b, 0);
+    const raw = vals.map((v) => (v / sum) * span);
+    return raw.map((r) => Math.max(26, r));
+  };
+  const colWs = partSizes(fig.colParts, colVals, colsNumeric, totalW);
+  const rowHs = partSizes(fig.rowParts, rowVals, rowsNumeric, totalH);
+  const w = labelPad + colWs.reduce((a, b) => a + b, 0) + 4;
+  const h = labelPad + rowHs.reduce((a, b) => a + b, 0) + 4;
+
+  const els: React.ReactElement[] = [];
+  // Column part labels (top edge)
+  let x = labelPad;
+  fig.colParts.forEach((p, c) => {
+    els.push(
+      <SvgText key={`cl${c}`} x={x + colWs[c] / 2} y={labelPad - 6} fontSize={8} fill="#1e40af" textAnchor="middle">
+        {asciifyMath(String(p))}
+      </SvgText>,
+    );
+    x += colWs[c];
+  });
+  // Row part labels (left edge)
+  let y = labelPad;
+  fig.rowParts.forEach((p, r) => {
+    els.push(
+      <SvgText key={`rl${r}`} x={labelPad - 6} y={y + rowHs[r] / 2 + 3} fontSize={8} fill="#1e40af" textAnchor="end">
+        {asciifyMath(String(p))}
+      </SvgText>,
+    );
+    y += rowHs[r];
+  });
+  // Cells
+  y = labelPad;
+  fig.rowParts.forEach((_, r) => {
+    let cx2 = labelPad;
+    fig.colParts.forEach((__, c) => {
+      const label = fig.cellLabels?.[r]?.[c];
+      els.push(
+        <Rect key={`cell${r}-${c}`} x={cx2} y={y} width={colWs[c]} height={rowHs[r]}
+          style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 0.9 }} />,
+      );
+      if (label) {
+        els.push(
+          <SvgText key={`ct${r}-${c}`} x={cx2 + colWs[c] / 2} y={y + rowHs[r] / 2 + 3}
+            fontSize={8} fill="#111827" textAnchor="middle">
+            {asciifyMath(label)}
+          </SvgText>,
+        );
+      }
+      cx2 += colWs[c];
+    });
+    y += rowHs[r];
+  });
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
+      </Svg>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Polygon on a unit grid — area/perimeter by counting, irregular figures
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderPolygonGrid(fig: PolygonGridFigure) {
+  const cell = Math.min(22, 260 / Math.max(fig.cols, 1), 170 / Math.max(fig.rowsCount, 1));
+  const w = fig.cols * cell + 8;
+  const h = fig.rowsCount * cell + 8;
+  const ox = 4;
+  const oy = 4;
+  const px = (gx: number) => ox + gx * cell;
+  const py = (gy: number) => oy + (fig.rowsCount - gy) * cell;
+
+  const els: React.ReactElement[] = [];
+  for (let c = 0; c <= fig.cols; c++) {
+    els.push(
+      <Line key={`v${c}`} x1={px(c)} y1={py(0)} x2={px(c)} y2={py(fig.rowsCount)}
+        style={{ stroke: '#d1d5db', strokeWidth: 0.5 }} />,
+    );
+  }
+  for (let r = 0; r <= fig.rowsCount; r++) {
+    els.push(
+      <Line key={`h${r}`} x1={px(0)} y1={py(r)} x2={px(fig.cols)} y2={py(r)}
+        style={{ stroke: '#d1d5db', strokeWidth: 0.5 }} />,
+    );
+  }
+  els.push(
+    <Polygon key="poly"
+      points={fig.vertices.map((v) => `${px(v.x)},${py(v.y)}`).join(' ')}
+      style={{ fill: '#3b82f6', fillOpacity: 0.15, stroke: '#1e40af', strokeWidth: 1.4 }} />,
+  );
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
+      </Svg>
+      {fig.unitLabel ? <Text style={styles.figureCaption}>{fig.unitLabel}</Text> : null}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Net of a 3-D solid — surface area
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderNet(fig: NetFigure) {
+  const unit = fig.unit ? ` ${fig.unit}` : '';
+  const els: React.ReactElement[] = [];
+  let w = 250;
+  let h = 190;
+
+  const rect = (x: number, y: number, rw: number, rh: number, key: string) =>
+    els.push(
+      <Rect key={key} x={x} y={y} width={rw} height={rh}
+        style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 1 }} />,
+    );
+  const label = (x: number, y: number, text: string, key: string) =>
+    els.push(
+      <SvgText key={key} x={x} y={y} fontSize={7} fill="#374151" textAnchor="middle">
+        {text}
+      </SvgText>,
+    );
+
+  if (fig.solid === 'cube') {
+    const s = 40;
+    const ox = (w - 4 * s) / 2;
+    const oy = (h - 3 * s) / 2;
+    // Cross: 4 across the middle, 1 above, 1 below the second square
+    rect(ox + s, oy, s, s, 'top');
+    for (let i = 0; i < 4; i++) rect(ox + i * s, oy + s, s, s, `m${i}`);
+    rect(ox + s, oy + 2 * s, s, s, 'bot');
+    label(ox + s / 2, oy + s - 4, `${fig.dims.side ?? 's'}${unit}`, 'l1');
+  } else if (fig.solid === 'rectangular-prism') {
+    const { width: dw = 4, height: dh = 3, depth: dd = 2 } = fig.dims;
+    const scale = Math.min(160 / (2 * dw + 2 * dd), 150 / (dh + 2 * dd), 22);
+    const W = dw * scale, H = dh * scale, D = dd * scale;
+    w = 2 * W + 2 * D + 20;
+    h = H + 2 * D + 28;
+    const ox = 10, oy = D + 14;
+    // Middle band: side(D) front(W) side(D) back(W); top/bottom (W×D) over/under front
+    rect(ox, oy, D, H, 'left');
+    rect(ox + D, oy, W, H, 'front');
+    rect(ox + D + W, oy, D, H, 'right');
+    rect(ox + D + W + D, oy, W, H, 'back');
+    rect(ox + D, oy - D, W, D, 'top');
+    rect(ox + D, oy + H, W, D, 'bottom');
+    label(ox + D + W / 2, oy - D - 3, `${dw}${unit}`, 'lw');
+    label(ox + D / 2, oy + H / 2 + 2, `${dd}${unit}`, 'ld');
+    label(ox + D + W + D + W + 2, oy + H / 2 + 2, `${dh}${unit}`, 'lh');
+  } else if (fig.solid === 'square-pyramid') {
+    const { base = 4, slant = 3 } = fig.dims;
+    const scale = Math.min(90 / base, 60 / slant, 20);
+    const B = base * scale, S = slant * scale;
+    w = B + 2 * S + 20;
+    h = B + 2 * S + 24;
+    const ox = 10 + S, oy = 12 + S;
+    rect(ox, oy, B, B, 'base');
+    const tri = (points: string, key: string) =>
+      els.push(
+        <Polygon key={key} points={points}
+          style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 1 }} />,
+      );
+    tri(`${ox},${oy} ${ox + B},${oy} ${ox + B / 2},${oy - S}`, 't');
+    tri(`${ox},${oy + B} ${ox + B},${oy + B} ${ox + B / 2},${oy + B + S}`, 'b');
+    tri(`${ox},${oy} ${ox},${oy + B} ${ox - S},${oy + B / 2}`, 'l');
+    tri(`${ox + B},${oy} ${ox + B},${oy + B} ${ox + B + S},${oy + B / 2}`, 'r');
+    label(ox + B / 2, oy + B / 2 + 2, `${base}${unit}`, 'lb');
+    label(ox + B / 2 + 14, oy - S / 2, `${slant}${unit}`, 'ls');
+  } else if (fig.solid === 'triangular-prism') {
+    const { base = 4, triHeight = 3, length = 6 } = fig.dims;
+    const side = Math.hypot(base / 2, triHeight);
+    const scale = Math.min(150 / length, 110 / (base + 2 * side), 18);
+    const B = base * scale, TH = triHeight * scale, L = length * scale, SD = side * scale;
+    w = L + 2 * B + 24;
+    h = B + 2 * SD + 20;
+    const ox = 10 + B, oy = 10 + SD;
+    // Three rectangles stacked (widths L; heights side, base, side) + 2 end triangles
+    rect(ox, oy - SD, L, SD, 'r1');
+    rect(ox, oy, L, B, 'r2');
+    rect(ox, oy + B, L, SD, 'r3');
+    els.push(
+      <Polygon key="t1" points={`${ox},${oy} ${ox},${oy + B} ${ox - TH},${oy + B / 2}`}
+        style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 1 }} />,
+      <Polygon key="t2" points={`${ox + L},${oy} ${ox + L},${oy + B} ${ox + L + TH},${oy + B / 2}`}
+        style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 1 }} />,
+    );
+    label(ox + L / 2, oy + B / 2 + 2, `${length} x ${base}${unit}`, 'lm');
+    label(ox - TH / 2 - 2, oy + B / 2 - 6, `${triHeight}${unit}`, 'lt');
+  } else {
+    // cylinder
+    const { radius = 2, height: ch = 5 } = fig.dims;
+    const scale = Math.min(60 / radius, 70 / ch, 16);
+    const R = radius * scale;
+    const CH = ch * scale;
+    const RW = 2 * Math.PI * R;
+    const drawW = Math.min(RW, 200);
+    w = Math.max(drawW, 2 * R) + 40;
+    h = 2 * R + CH + 2 * R + 36;
+    const cx = w / 2;
+    els.push(
+      <Circle key="c1" cx={cx} cy={12 + R} r={R}
+        style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 1 }} />,
+    );
+    rect(cx - drawW / 2, 16 + 2 * R, drawW, CH, 'body');
+    els.push(
+      <Circle key="c2" cx={cx} cy={20 + 2 * R + CH + R} r={R}
+        style={{ fill: '#ffffff', stroke: '#1e40af', strokeWidth: 1 }} />,
+    );
+    label(cx, 12 + R + 2, `r = ${radius}${unit}`, 'lr');
+    label(cx, 16 + 2 * R + CH / 2 + 2, `h = ${ch}${unit}`, 'lh');
+  }
+
+  return (
+    <View style={styles.figureContainer}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        <G>{els}</G>
       </Svg>
     </View>
   );
@@ -1217,6 +1901,21 @@ function renderFigure(figure: Figure) {
     case 'data-display': return renderDataDisplay(figure);
     case 'fraction-model': return renderFractionModel(figure);
     case 'function-mapping': return renderFunctionMapping(figure);
+    case 'angle': return renderAngle(figure);
+    case 'table': return renderTable(figure);
+    case 'tape-diagram': return renderTapeDiagram(figure);
+    case 'double-number-line': return renderDoubleNumberLine(figure);
+    case 'clock': return renderClock(figure);
+    case 'area-model': return renderAreaModel(figure);
+    case 'polygon-grid': return renderPolygonGrid(figure);
+    case 'net': return renderNet(figure);
+    default:
+      // Unknown kind from a newer/older generator — degrade gracefully.
+      return (
+        <View style={styles.figureContainer}>
+          <Text style={styles.figureCaption}>[See figure described in problem]</Text>
+        </View>
+      );
   }
 }
 
@@ -1252,11 +1951,20 @@ interface TopicReviewRef {
   bookRefs?: BookRef[];
 }
 
+// "Watch first" block: a QR code to the worksheet's /watch page + the top
+// video titles, printed at the top of the sheet so kids watch BEFORE working.
+export interface WatchBlock {
+  qrDataUrl?: string;      // PNG data URL (generated in render.ts via `qrcode`)
+  url?: string;            // human-readable short URL fallback
+  videos: Array<{ topicName: string; title: string; minutes?: number }>;
+}
+
 interface WorksheetDay {
   title: string;
   questions: Question[];
   date?: string;
   topicReviews?: TopicReviewRef[];
+  watch?: WatchBlock;
 }
 
 interface WorksheetPDFProps {
@@ -1265,6 +1973,7 @@ interface WorksheetPDFProps {
   questions: Question[];
   date?: string;
   topicReviews?: TopicReviewRef[];
+  watch?: WatchBlock;
 }
 
 interface BatchWorksheetPDFProps {
@@ -1309,12 +2018,38 @@ function renderQuestion(q: Question, refsByTopic?: Map<string, BookRef[] | undef
   );
 }
 
-function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
+function WatchFirstBox({ watch }: { watch: WatchBlock }) {
+  if (!watch.videos.length && !watch.qrDataUrl) return null;
+  return (
+    <View style={styles.watchBox}>
+      <View style={styles.watchLeft}>
+        <Text style={styles.watchHeader}>Watch first — 5-10 minutes, then start</Text>
+        {watch.videos.slice(0, 4).map((v, i) => (
+          <Text key={i} style={styles.watchRow}>
+            • {v.topicName}: {v.title}
+            {v.minutes ? ` (${v.minutes} min)` : ''}
+          </Text>
+        ))}
+        {watch.url ? <Text style={styles.watchUrl}>All links: {watch.url}</Text> : null}
+      </View>
+      {watch.qrDataUrl ? (
+        <View>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <Image src={watch.qrDataUrl} style={styles.watchQr} />
+          <Text style={styles.watchQrLabel}>Scan to watch</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function WorksheetPage({ title, childName, questions, dateStr, topicReviews, watch }: {
   title: string;
   childName: string;
   questions: Question[];
   dateStr: string;
   topicReviews?: TopicReviewRef[];
+  watch?: WatchBlock;
 }) {
   const hasNewSection = questions.some((q) => q.section === 'new');
   const hasReviewSection = questions.some((q) => q.section === 'review');
@@ -1354,6 +2089,8 @@ function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
         </View>
       </View>
 
+      {watch ? <WatchFirstBox watch={watch} /> : null}
+
       {hasSections ? (
         <>
           {newQuestions.length > 0 && (
@@ -1384,7 +2121,7 @@ function WorksheetPage({ title, childName, questions, dateStr, topicReviews }: {
   );
 }
 
-export function WorksheetPDF({ title, childName, questions, date, topicReviews }: WorksheetPDFProps) {
+export function WorksheetPDF({ title, childName, questions, date, topicReviews, watch }: WorksheetPDFProps) {
   const dateStr = date || new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -1394,7 +2131,7 @@ export function WorksheetPDF({ title, childName, questions, date, topicReviews }
 
   return (
     <Document>
-      <WorksheetPage title={title} childName={childName} questions={questions} dateStr={dateStr} topicReviews={topicReviews} />
+      <WorksheetPage title={title} childName={childName} questions={questions} dateStr={dateStr} topicReviews={topicReviews} watch={watch} />
     </Document>
   );
 }
@@ -1416,6 +2153,7 @@ export function BatchWorksheetPDF({ childName, days }: BatchWorksheetPDFProps) {
           questions={day.questions}
           dateStr={day.date || defaultDate}
           topicReviews={day.topicReviews}
+          watch={day.watch}
         />
       ))}
     </Document>

@@ -1,28 +1,36 @@
 import { CurriculumTopic, TopicSelection } from './curriculum/types';
 import { prisma } from './db';
-import {
-  orderedSequence,
-  floorIndexFor,
-  getStartFloor,
-  seqCountsFor,
-  selectSequential,
-  SeqMastery,
-} from './curriculum/sequencing';
+import { seqCountsFor, selectSequential, SeqMastery } from './curriculum/sequencing';
+import { resolveCurriculumForChild, ChildCurriculumRef } from './curriculum/courses';
+import { loadAdaptiveStates, AdaptiveTopicState } from './adaptive';
+import { computePlanStatus, PlanStatus } from './plan';
 
 export type Pacing = 'accelerating' | 'steady' | 'reinforcing';
+
+export interface SelectTopicsChild extends ChildCurriculumRef {
+  planEndDate?: Date | null;
+  targetTestDate?: Date | null;
+}
 
 export interface SelectTopicsResult {
   selections: TopicSelection[];
   pacing: Pacing;
-  /** Primary new topic IDs that should be excluded in multi-day batches (not fill-ins) */
+  /** Primary new topic IDs (the frontier window taught on this sheet). */
   primaryNewTopicIds: string[];
+  /** Adaptive per-topic state, for difficulty/variety prompting. */
+  states: Map<string, AdaptiveTopicState>;
+  /** Study-plan pace status (drives numCurrent + advance rule + dashboards). */
+  plan: PlanStatus;
+  /** Ordered sequence + floor, so callers don't re-resolve. */
+  seq: CurriculumTopic[];
+  floorIndex: number;
 }
 
 /**
  * Get pacing recommendation based on recent graded worksheet scores.
- * - avg > 85% → accelerating (up to 90% new)
- * - avg < 60% → reinforcing (down to 40% new)
- * - otherwise → steady (default 70% new)
+ * - avg > 85% → accelerating (larger preview)
+ * - avg < 60% → reinforcing (more review, no preview)
+ * - otherwise → steady
  */
 export async function getPacingRecommendation(childId: string): Promise<Pacing> {
   const recentWorksheets = await prisma.worksheet.findMany({
@@ -46,57 +54,54 @@ export async function getPacingRecommendation(childId: string): Promise<Pacing> 
 }
 
 /**
- * Select topics for a worksheet by walking the curriculum IN SEQUENCE.
+ * Select topics for a worksheet by walking the child's course sequence.
  *
- * Builds the global teaching order ((gradeLevel, order)), finds the student's
- * frontier (first not-yet-mastered topic at/after their start floor), and picks
- * a FEW focused topics: the next unmastered topics (current), a little review of
- * earlier weak spots, and a small preview ahead. This keeps worksheets
- * sequential and building, instead of scattering across the whole year.
- *
- * @param excludeNewTopicIds - topic IDs to exclude from new selections (for multi-day batches, so each day advances)
+ * Course preset (or legacy grade/track) → ordered sequence + start floor.
+ * The frontier advances on graded mastery OR sufficient ungraded exposure
+ * (serve counts), paced against the child's plan end date. See sequencing.ts
+ * for the advance rule and plan.ts for the pace math.
  */
 export async function selectTopics(
-  childId: string,
-  topics: CurriculumTopic[],
+  child: SelectTopicsChild,
   totalQuestions: number = 25,
-  _targetTestDate?: Date | null,
-  excludeNewTopicIds?: Set<string>,
-  windowOffset?: number
+  opts: {
+    excludeNewTopicIds?: Set<string>;
+    windowOffset?: number;
+  } = {}
 ): Promise<SelectTopicsResult> {
-  const masteryRecords = await prisma.topicMastery.findMany({ where: { childId } });
-  // Only records that match a topic in the CURRENT curriculum pool count.
-  // Old curricula used different topic-ID schemes (numeric "6", TEKS "3.4A");
-  // those orphaned rows must not steer selection or the UI.
+  const { topics, seq, floorIndex } = resolveCurriculumForChild(child);
   const poolIds = new Set(topics.map((t) => t.id));
-  const masteryMap = new Map<string, SeqMastery>();
-  for (const r of masteryRecords) {
-    if (!poolIds.has(r.topicId)) continue;
-    masteryMap.set(r.topicId, {
-      mastery: r.mastery,
-      lastPracticedAt: r.lastPracticedAt,
-      timesPracticed: r.timesPracticed,
-    });
-  }
+  // Only rows matching the CURRENT curriculum pool count — old curricula used
+  // different topic-ID schemes and those orphans must not steer selection.
+  const states = await loadAdaptiveStates(child.id, poolIds);
 
-  const child = await prisma.child.findUnique({ where: { id: childId } });
-  const baseGrade = child?.grade ?? Math.min(...topics.map((t) => t.gradeLevel));
-  const childName = child?.name ?? '';
+  const pacing = await getPacingRecommendation(child.id);
+  const planEnd = child.planEndDate ?? child.targetTestDate ?? null;
+  const plan = computePlanStatus(seq.slice(floorIndex), states, planEnd);
 
-  const pacing = await getPacingRecommendation(childId);
+  const counts = seqCountsFor(totalQuestions, pacing, plan.numCurrent);
 
-  const seq = orderedSequence(topics);
-  const floorIndex = floorIndexFor(seq, getStartFloor(childName, baseGrade));
-  const counts = seqCountsFor(totalQuestions, pacing);
+  const seqMastery = new Map<string, SeqMastery>();
+  states.forEach((s, id) =>
+    seqMastery.set(id, {
+      mastery: s.mastery,
+      lastPracticedAt: s.lastPracticedAt,
+      timesPracticed: s.timesPracticed,
+      timesServed: s.timesServed,
+      servesSinceGrade: s.servesSinceGrade,
+      lastServedAt: s.lastServedAt,
+    })
+  );
 
-  const { selections, primaryNewTopicIds } = selectSequential(seq, masteryMap, {
+  const { selections, primaryNewTopicIds } = selectSequential(seq, seqMastery, {
     floorIndex,
     counts,
-    excludeIds: excludeNewTopicIds,
-    windowOffset,
+    excludeIds: opts.excludeNewTopicIds,
+    windowOffset: opts.windowOffset,
+    servesToAdvance: plan.servesToAdvance,
   });
 
-  return { selections, pacing, primaryNewTopicIds };
+  return { selections, pacing, primaryNewTopicIds, states, plan, seq, floorIndex };
 }
 
 /**
@@ -158,9 +163,12 @@ export async function updateMastery(
     where: { childId_topicId: { childId, topicId } },
   });
 
-  const oldMastery = existing?.mastery ?? 0;
-  const newMastery = existing
-    ? 0.7 * oldMastery + 0.3 * scorePercent
+  // A row that exists from SERVES only (never graded) carries no mastery
+  // evidence — the first grade sets mastery directly rather than blending
+  // with the zero placeholder.
+  const hasEvidence = !!existing && (existing.timesPracticed > 0 || existing.mastery > 0);
+  const newMastery = hasEvidence
+    ? 0.7 * existing!.mastery + 0.3 * scorePercent
     : scorePercent;
 
   await prisma.topicMastery.upsert({

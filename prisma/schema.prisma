@@ -22,11 +22,20 @@ model User {
 model Child {
   id             String         @id @default(cuid())
   name           String
-  grade          Int
+  grade          Int            // engine grade: which curriculum sequence they work in
   track          String         // e.g. "accelerated", "standard"
   state          String         @default("TX")
   district       String         @default("eanes-isd")
   targetTestDate DateTime?
+  // Named course preset (see src/lib/curriculum/courses.ts). When set it defines
+  // the topic sequence + start floor, superseding (grade, track) resolution.
+  courseId       String?
+  // The grade the child is actually IN at school, for display (e.g. Eliana is a
+  // 6th grader whose engine grade is 7 because she takes Math 8 Accelerated).
+  displayGrade   Int?
+  // Finish-by date for the current study plan (e.g. first day of school). Drives
+  // required pace: topics remaining / weekdays left.
+  planEndDate    DateTime?
   emailEnabled   Boolean        @default(true)
   createdAt      DateTime       @default(now())
   userId         String
@@ -70,10 +79,20 @@ model TopicMastery {
   topicId         String
   topicName       String
   gradeLevel      Int
-  mastery         Float    @default(0) // 0-100
-  timesPracticed  Int      @default(0)
+  mastery         Float    @default(0) // 0-100 (graded evidence, EMA)
+  timesPracticed  Int      @default(0) // GRADED practice events
   lastPracticedAt DateTime?
   lastScore       Float?
+  // ── Adaptive-difficulty state (see src/lib/adaptive.ts) ──
+  // Graded ladder position 1..4. Serves since the last grade escalate the
+  // EFFECTIVE difficulty on top of this without mutating it.
+  difficultyLevel  Float     @default(1)
+  timesServed      Int       @default(0) // worksheets generated containing this topic
+  servesSinceGrade Int       @default(0) // consecutive serves with no grading feedback
+  lastServedAt     DateTime?
+  formatsJson      String?   // recent question formats served (variety rotation)
+  missesJson       String?   // recent wrong answers (question/studentAnswer/feedback)
+  figuresJson      String?   // recent figure signatures served (visual variety)
 
   @@unique([childId, topicId])
 }
@@ -82,10 +101,37 @@ model UsageRecord {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id])
-  type        String   // "generate" | "grade"
+  type        String   // "generate" | "grade" | "credit" | "refund"
   worksheetId String?
   creditsCost Int
   createdAt   DateTime @default(now())
 
   @@index([userId, type])
+}
+
+// Immutable record of admin/product actions (refunds, credit grants, plan
+// edits) so customer-support decisions are traceable.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorEmail String?
+  action     String   // e.g. "refund", "credit-grant", "ticket-resolve"
+  targetType String?  // e.g. "user", "worksheet", "ticket"
+  targetId   String?
+  detailJson String?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+}
+
+model SupportTicket {
+  id         String    @id @default(cuid())
+  email      String
+  subject    String
+  message    String
+  status     String    @default("open") // open | resolved
+  notes      String?   // internal admin notes
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
 }

@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/auth';
 import { verifyChildOwnership } from '@/lib/ownership';
 import { checkUsageAllowance, recordUsage } from '@/lib/billing';
-import { getTopicsForChild } from '@/lib/curriculum';
+import { resolveCurriculumForChild } from '@/lib/curriculum/courses';
 import { generateAdaptiveWorksheet } from '@/lib/worksheet-generation';
 import { TopicSelection } from '@/lib/curriculum/types';
 import { Question } from '@/types';
 
 // Multi-day batch generation. Each day reuses the SAME shared generation core
-// as the single-sheet and cron paths (no drift), with the current-topic window
-// sliding forward ONE topic per day. A week of sheets therefore practices the
-// frontier with heavy overlap and fresh problems, instead of leaping a whole
-// topic-window per day and racing into material the child has never seen.
+// as the single-sheet and cron paths (no drift). Progression across the days
+// comes from the SERVE-ADVANCE rule: each generated sheet records exposure per
+// topic, and after `servesToAdvance` exposures (pace-derived) the frontier
+// moves — so a week of sheets practices each topic 2-3 days with escalating
+// difficulty and fresh problem structures, then moves on. (The old
+// windowOffset sliding is superseded by this; do NOT reintroduce per-day
+// topic exclusion, which raced 3-6 topics/day into untaught material.)
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
@@ -48,10 +51,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Parent hand-picked topics → same topics every day (variety comes from
-    // the avoid-list); otherwise adaptive with the sliding window.
+    // the avoid-list + format rotation); otherwise adaptive.
     let forcedSelections: TopicSelection[] | undefined;
     if (selectedTopicIds && selectedTopicIds.length > 0) {
-      const allTopics = getTopicsForChild(child.grade, child.track, child.state, child.district);
+      const { topics: allTopics } = resolveCurriculumForChild(child);
       forcedSelections = allTopics
         .filter((t) => selectedTopicIds.includes(t.id))
         .map((t) => ({ topic: t, reason: 'current' as const, priority: 100 }));
@@ -78,28 +81,15 @@ export async function POST(request: NextRequest) {
     }> = [];
     const errors: Array<{ day: string; error: string }> = [];
 
-    for (let dayIndex = 0; dayIndex < days.length; dayIndex++) {
-      const day = days[dayIndex];
+    for (const day of days) {
       try {
-        const result = await generateAdaptiveWorksheet(
-          {
-            id: child.id,
-            name: child.name,
-            grade: child.grade,
-            track: child.track,
-            state: child.state,
-            district: child.district,
-            targetTestDate: child.targetTestDate,
-          },
-          {
-            questionCount,
-            dayOfWeek: day,
-            titlePrefix: day,
-            windowOffset: dayIndex,
-            avoidQuestions: [...avoidQuestions],
-            forcedSelections,
-          }
-        );
+        const result = await generateAdaptiveWorksheet(child, {
+          questionCount,
+          dayOfWeek: day,
+          titlePrefix: day,
+          avoidQuestions: [...avoidQuestions],
+          forcedSelections,
+        });
 
         await recordUsage(user.id, 'generate', result.worksheetId);
 
