@@ -26,10 +26,12 @@ export async function GET(
       plan: {
         planEnd: status.planEnd?.toISOString() ?? null,
         weekdaysLeft: status.weekdaysLeft,
+        calendarDaysLeft: status.calendarDaysLeft,
         totalTopics: status.totalTopics,
         advancedTopics: status.advancedTopics,
         remaining: status.remaining,
         paceNeeded: status.paceNeeded,
+        topicsPerWeek: status.topicsPerWeek,
         achievablePace: status.achievablePace,
         onTrack: status.onTrack,
         projectedFinishWeekdays: status.projectedFinishWeekdays,

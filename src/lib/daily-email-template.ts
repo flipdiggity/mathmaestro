@@ -9,7 +9,7 @@ export interface ChildReport {
   yesterdayScore?: number | null;
   missedCount?: number;
   error?: string;
-  /** Study-plan status line, e.g. "31 topics left · 27 school days · on pace". */
+  /** Study-plan status line, e.g. "31 topics · 38 days left · on pace for Aug 12". */
   planLine?: string | null;
   planOnTrack?: boolean | null;
   /** URL of the sheet's watch-first video page. */

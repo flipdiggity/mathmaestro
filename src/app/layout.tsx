@@ -45,7 +45,11 @@ const navLinks = [
   { href: "/plan", label: "Plan" },
   { href: "/worksheets", label: "History" },
   { href: "/children", label: "Children" },
-  ...(isSaas ? [{ href: "/billing", label: "Billing" }] : []),
+  // saas: Billing = Stripe portal (update card, invoices); account menu (sign
+  // out etc.) is the Clerk UserButton next to the links. Admin stays off the
+  // customer nav — admins reach /admin by URL and the page itself gates.
+  ...(isSaas ? [{ href: "/billing", label: "Billing" }] : [{ href: "/admin", label: "Admin" }]),
+  { href: "/support", label: "Support" },
 ];
 
 function Shell({ children }: { children: React.ReactNode }) {

@@ -56,9 +56,14 @@ export function topicAdvanced(
 
 export interface PaceParams {
   planEnd: Date | null;
+  /** Practice days (Mon-Fri, when sheets generate) until the end date — the ENGINE's unit. */
   weekdaysLeft: number | null;
+  /** Calendar days until the end date — the DISPLAY unit ("days left" that matches a wall calendar). */
+  calendarDaysLeft: number | null;
   remaining: number;
-  paceNeeded: number | null;     // topics per weekday, null when no plan
+  paceNeeded: number | null;     // topics per practice day, null when no plan
+  /** paceNeeded expressed per week — friendlier for display, season-agnostic. */
+  topicsPerWeek: number | null;
   servesToAdvance: number;
   numCurrent: number | null;     // null → caller uses its default sizing
   achievablePace: number;        // numCurrent / servesToAdvance (or default)
@@ -79,8 +84,10 @@ export function computePaceParams(
     return {
       planEnd: null,
       weekdaysLeft: null,
+      calendarDaysLeft: null,
       remaining,
       paceNeeded: null,
+      topicsPerWeek: null,
       servesToAdvance: DEFAULT_SERVES_TO_ADVANCE,
       numCurrent: null,
       achievablePace: 1,
@@ -88,6 +95,10 @@ export function computePaceParams(
     };
   }
   const weekdaysLeft = Math.max(1, countWeekdays(now, planEnd));
+  const calendarDaysLeft = Math.max(
+    1,
+    Math.ceil((planEnd.getTime() - now.getTime()) / 86_400_000)
+  );
   const paceNeeded = remaining / weekdaysLeft;
   // Slower plans get 3 exposures per topic; faster plans trade repetition for
   // coverage (2 exposures) and widen the per-sheet topic window.
@@ -97,8 +108,10 @@ export function computePaceParams(
   return {
     planEnd,
     weekdaysLeft,
+    calendarDaysLeft,
     remaining,
     paceNeeded,
+    topicsPerWeek: Math.round(paceNeeded * 5 * 10) / 10,
     servesToAdvance,
     numCurrent,
     achievablePace,

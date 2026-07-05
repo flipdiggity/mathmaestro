@@ -134,7 +134,7 @@ async function runDailyEmail(): Promise<{ status: number; body: Record<string, u
       const plan = result.plan;
       const planLine =
         plan && plan.planEnd && plan.paceNeeded != null
-          ? `Plan: ${plan.remaining} topics left · ${plan.weekdaysLeft} school days · ${
+          ? `Plan: ${plan.remaining} topics · ${plan.calendarDaysLeft} days left · ${
               plan.onTrack === false ? 'BEHIND pace' : 'on pace'
             } for ${plan.planEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
           : null;

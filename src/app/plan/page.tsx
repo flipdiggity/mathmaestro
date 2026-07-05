@@ -16,10 +16,12 @@ import {
 interface PlanInfo {
   planEnd: string | null;
   weekdaysLeft: number | null;
+  calendarDaysLeft: number | null;
   totalTopics: number;
   advancedTopics: number;
   remaining: number;
   paceNeeded: number | null;
+  topicsPerWeek: number | null;
   achievablePace: number;
   onTrack: boolean | null;
   projectedFinishWeekdays: number | null;
@@ -122,12 +124,12 @@ function PlanStatusCard({ childId, childName }: { childId: string; childName: st
               <p className="text-[11px] text-muted-foreground">topics left</p>
             </div>
             <div className="rounded-lg bg-muted/60 p-2">
-              <p className="text-lg font-bold">{plan.weekdaysLeft}</p>
-              <p className="text-[11px] text-muted-foreground">school days left</p>
+              <p className="text-lg font-bold">{plan.calendarDaysLeft}</p>
+              <p className="text-[11px] text-muted-foreground">days left</p>
             </div>
             <div className="rounded-lg bg-muted/60 p-2">
-              <p className="text-lg font-bold">{Math.round((plan.paceNeeded ?? 0) * 10) / 10}</p>
-              <p className="text-[11px] text-muted-foreground">topics/day needed</p>
+              <p className="text-lg font-bold">{plan.topicsPerWeek}</p>
+              <p className="text-[11px] text-muted-foreground">topics/week to stay on pace</p>
             </div>
           </div>
         ) : (
@@ -179,6 +181,7 @@ interface Child {
   id: string;
   name: string;
   grade: number;
+  displayGrade?: number | null;
 }
 interface TopicRow {
   id: string;
@@ -222,6 +225,7 @@ export default function PlanPage() {
         id: c.id,
         name: c.name,
         grade: c.grade,
+        displayGrade: c.displayGrade,
       }));
       setChildren(list);
       if (list.length > 0) setSelectedChildId(list[0].id);
@@ -298,7 +302,7 @@ export default function PlanPage() {
               <SelectContent>
                 {children.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.name} — Grade {c.grade}
+                    {c.name} — Grade {c.displayGrade ?? c.grade}
                   </SelectItem>
                 ))}
               </SelectContent>
