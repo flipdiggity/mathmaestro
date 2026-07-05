@@ -34,6 +34,11 @@ const KA_COURSES: Record<number, { url: string; label: string }> = {
   6: { url: `${KA_MATH}/cc-sixth-grade-math`, label: '6th grade' },
   7: { url: `${KA_MATH}/cc-seventh-grade-math`, label: '7th grade' },
   8: { url: `${KA_MATH}/cc-eighth-grade-math`, label: '8th grade' },
+  // Pseudo-grades for HS-credit courses taken in middle school. Their topics
+  // have no per-topic curated entries yet — the gradeLevel safety net below
+  // sends kids to the right KA course, and the search fallback does the rest.
+  9: { url: `${KA_MATH}/algebra`, label: 'Algebra 1' },
+  10: { url: `${KA_MATH}/geometry`, label: 'Geometry' },
 };
 
 const KA_ALGEBRA_BASICS = `${KA_MATH}/algebra-basics`;

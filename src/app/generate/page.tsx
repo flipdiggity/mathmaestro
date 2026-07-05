@@ -88,6 +88,25 @@ type Pacing = 'accelerating' | 'steady' | 'reinforcing';
 
 const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
+// Parse a fetch response defensively. Vercel timeouts/crashes return PLAIN
+// TEXT ("An error occurred with your deployment...") — blindly calling
+// res.json() on that surfaces `Unexpected token 'A'...` to the parent. Turn
+// non-JSON failures into a readable, actionable message instead.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function readJson(res: Response): Promise<any> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    if (res.status === 504 || res.status === 502 || text.startsWith('An error occurred')) {
+      throw new Error(
+        'The server ran out of time on this request — each sheet takes 2-3 minutes to write and verify. Try again (it usually works on retry), or generate fewer days at once.'
+      );
+    }
+    throw new Error(`Server error (${res.status}). Please try again.`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Inner component that uses useSearchParams (must be inside Suspense)
 // ---------------------------------------------------------------------------
@@ -297,8 +316,16 @@ function GeneratePageInner() {
   }
 
   // ------------------------------------------------------------------
-  // Generate worksheet (single day)
+  // Generate worksheet(s). Multi-day batches run ONE REQUEST PER DAY from the
+  // client: each sheet takes the model ~2-3 minutes (it thinks + verifies its
+  // answer key), so a whole week in one server call would hit the serverless
+  // time limit — and per-day calls give real progress + partial results. The
+  // engine's serve-advance + recent-question memory live in the DB, so
+  // sequential requests keep full cross-day continuity.
   // ------------------------------------------------------------------
+  const [batchDone, setBatchDone] = useState<string[]>([]);
+  const [batchFailed, setBatchFailed] = useState<string[]>([]);
+
   async function handleGenerate() {
     if (!selectedChildId) return;
 
@@ -306,6 +333,8 @@ function GeneratePageInner() {
     setError(null);
     setWorksheet(null);
     setBatchWorksheets([]);
+    setBatchDone([]);
+    setBatchFailed([]);
     setShowAnswers(false);
     setPacing(null);
 
@@ -313,24 +342,46 @@ function GeneratePageInner() {
       const count = Math.max(1, Math.min(50, questionCount));
 
       if (batchMode && selectedDays.size > 1) {
-        // Multi-day batch generation
+        // Multi-day batch: one request per day, results appended as they land.
         const days = ALL_DAYS.filter((d) => selectedDays.has(d));
-        const res = await fetch('/api/generate-batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            childId: selectedChildId,
-            questionCount: count,
-            selectedTopicIds: topicMode !== 'auto' && selectedTopicIds.size > 0
-              ? Array.from(selectedTopicIds)
-              : undefined,
-            days,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? 'Batch generation failed');
-        setBatchWorksheets(data.worksheets);
-        setPacing(data.pacing ?? null);
+        const manualTopics =
+          topicMode !== 'auto' && selectedTopicIds.size > 0
+            ? Array.from(selectedTopicIds)
+            : undefined;
+        const failed: string[] = [];
+        for (const day of days) {
+          setGeneratingDay(day);
+          try {
+            const res = await fetch('/api/generate-batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                childId: selectedChildId,
+                questionCount: count,
+                selectedTopicIds: manualTopics,
+                days: [day],
+              }),
+            });
+            const data = await readJson(res);
+            if (!res.ok || !data.worksheets?.length) {
+              throw new Error(data.errors?.[0]?.error ?? data.error ?? 'generation failed');
+            }
+            setBatchWorksheets((prev) => [...prev, ...data.worksheets]);
+            setBatchDone((prev) => [...prev, day]);
+          } catch (dayErr) {
+            failed.push(day);
+            setBatchFailed((prev) => [...prev, day]);
+            console.error(`Batch day ${day} failed:`, dayErr);
+          }
+        }
+        if (failed.length === days.length) {
+          throw new Error('All days failed to generate. Please try again.');
+        }
+        if (failed.length > 0) {
+          setError(
+            `Generated ${days.length - failed.length} of ${days.length} days — ${failed.join(', ')} failed. You can generate those again individually.`
+          );
+        }
       } else {
         // Single worksheet generation
         const body: {
@@ -351,7 +402,7 @@ function GeneratePageInner() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
+        const data = await readJson(res);
         if (!res.ok) throw new Error(data.error ?? 'Generation failed');
         setWorksheet(data.worksheet);
         setPacing(data.pacing ?? null);
@@ -384,7 +435,7 @@ function GeneratePageInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ childId: selectedChildId }),
       });
-      const data = await res.json();
+      const data = await readJson(res);
       if (!res.ok) throw new Error(data.error ?? 'Diagnostic generation failed');
       setWorksheet({
         id: data.worksheet.id,
@@ -414,7 +465,7 @@ function GeneratePageInner() {
     try {
       const res = await fetch(`/api/children/${childId}/plan`);
       if (!res.ok) return;
-      const data = await res.json();
+      const data = await readJson(res);
       setCourseInfo({
         course: data.course ?? null,
         coursesForGrade: data.coursesForGrade ?? [],
@@ -682,16 +733,68 @@ function GeneratePageInner() {
   }
 
   // ------------------------------------------------------------------
-  // Result display (single or batch)
+  // Result display (single or batch). During a multi-day batch this view is
+  // shown as soon as the FIRST day lands: finished sheets stream in as cards
+  // under a live "X of Y days" progress banner.
   // ------------------------------------------------------------------
+  const batchDaysPlanned = ALL_DAYS.filter((d) => selectedDays.has(d));
   if (worksheet || batchWorksheets.length > 0) {
     return (
       <div className="min-h-screen bg-background py-10 px-4">
         <div className="mx-auto max-w-2xl space-y-6">
+          {generating && (
+            <Card className="border-indigo-200 bg-indigo-50/60">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-indigo-900">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Generating {generatingDay ?? '…'} — {batchDone.length} of{' '}
+                  {batchDaysPlanned.length} days done
+                </div>
+                <div className="mt-2.5 h-1.5 rounded-full bg-indigo-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-indigo-500 transition-all duration-500"
+                    style={{
+                      width: `${Math.max(4, Math.round((batchDone.length / Math.max(1, batchDaysPlanned.length)) * 100))}%`,
+                    }}
+                  />
+                </div>
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {batchDaysPlanned.map((d) => (
+                    <span
+                      key={d}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                        batchDone.includes(d)
+                          ? 'bg-green-100 text-green-700'
+                          : batchFailed.includes(d)
+                            ? 'bg-red-100 text-red-700'
+                            : d === generatingDay
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white text-slate-500 border border-slate-200'
+                      }`}
+                    >
+                      {batchDone.includes(d) ? '✓ ' : batchFailed.includes(d) ? '✗ ' : ''}
+                      {d.slice(0, 3)}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-indigo-800/70">
+                  Each sheet takes ~2–3 minutes — the AI writes, solves and double-checks every
+                  problem. Finished days appear below; you can already open them.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {error && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {error}
+            </div>
+          )}
+
           <PacingBanner />
 
           {/* Combined download button for batch */}
-          {batchWorksheets.length > 1 && (
+          {!generating && batchWorksheets.length > 1 && (
             <Button size="lg" className="w-full" onClick={handleBatchPdfDownload}>
               <FileDown className="mr-1.5 h-4 w-4" />
               Download All {batchWorksheets.length} Worksheets (1 PDF)
@@ -702,10 +805,12 @@ function GeneratePageInner() {
 
           {batchWorksheets.map((ws) => renderWorksheetCard(ws, true))}
 
-          <Button variant="outline" onClick={handleReset} className="w-full">
-            <RefreshCw className="mr-1.5 h-4 w-4" />
-            Generate Another
-          </Button>
+          {!generating && (
+            <Button variant="outline" onClick={handleReset} className="w-full">
+              <RefreshCw className="mr-1.5 h-4 w-4" />
+              Generate Another
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -1018,7 +1123,7 @@ function GeneratePageInner() {
                   className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Between 1 and 50. Default: 30.
+                  Between 1 and 50. Default: 25.
                 </p>
               </div>
 
@@ -1075,7 +1180,9 @@ function GeneratePageInner() {
               {generating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {generatingDay ? `Generating ${generatingDay}...` : 'Generating...'}
+                  {generatingDay
+                    ? `Generating ${generatingDay}… (${batchDone.length} of ${selectedDays.size} done)`
+                    : 'Generating… (~2-3 min — writing and checking every answer)'}
                 </>
               ) : batchMode && selectedDays.size > 1 ? (
                 `Generate ${selectedDays.size} Worksheets`

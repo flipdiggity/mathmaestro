@@ -17,7 +17,8 @@ export const eanesIsd: DistrictConfig = {
   name: 'Eanes ISD',
   state: 'TX',
   standardsFramework: 'TEKS',
-  supportedGrades: [3, 4, 5, 6, 7],
+  // 9 = Algebra 1, 10 = Geometry (HS-credit courses taken in middle school).
+  supportedGrades: [3, 4, 5, 6, 7, 8, 9, 10],
   tracks: ['standard', 'accelerated', 'test-prep'],
   acceleratedMapping: {
     3: [4],

@@ -6,6 +6,9 @@ import { grade5Curriculum } from './districts/tx/eanes-isd/grade-5';
 import { grade56Curriculum } from './districts/tx/eanes-isd/grade-6';
 import { grade7Curriculum } from './districts/tx/eanes-isd/grade-7';
 import { grade8Curriculum } from './districts/tx/eanes-isd/grade-8';
+import { grade9Algebra1Curriculum } from './districts/tx/eanes-isd/grade-9-algebra1';
+// TEMP-STUB-GEOMETRY import { grade10GeometryCurriculum } from './districts/tx/eanes-isd/grade-10-geometry';
+const grade10GeometryCurriculum = { grade: 10, label: 'Geometry (Honors)', topics: [] } as GradeCurriculum;
 
 export { type CurriculumTopic, type GradeCurriculum } from './types';
 export { type DistrictConfig } from './districts/tx/eanes-isd';
@@ -27,6 +30,11 @@ const curriculumRegistry: Record<string, GradeCurriculum> = {
   'TX/eanes-isd/6': grade56Curriculum,
   'TX/eanes-isd/7': grade7Curriculum,
   'TX/eanes-isd/8': grade8Curriculum,
+  // High-school-credit courses taken in middle school (Eanes accelerated
+  // pathway) — registered as pseudo-grades 9/10 so the grade-keyed machinery
+  // (ordering, videos, pools) works unchanged.
+  'TX/eanes-isd/9': grade9Algebra1Curriculum,
+  'TX/eanes-isd/10': grade10GeometryCurriculum,
 };
 
 export function getDistrictConfig(

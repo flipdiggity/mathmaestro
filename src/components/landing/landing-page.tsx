@@ -131,6 +131,11 @@ const TRACKS: Track[] = [
     text: 'Fifth- and sixth-grade math compacted into a single accelerated year — the on-ramp to the advanced middle-school sequence.',
   },
   {
+    name: 'Algebra 1 & Geometry Honors',
+    who: 'Accelerated 6th–8th graders',
+    text: 'The full high-school-credit courses taken in middle school — linear and quadratic functions, proofs, right-triangle trig — with the same adaptive practice and photo grading.',
+  },
+  {
     name: 'Acceleration test prep',
     who: 'Testing up a level',
     text: 'Preparing for a placement or acceleration exam? A focused plan covers exactly the tested scope, paced to be ready by test day.',
@@ -413,7 +418,7 @@ export function LandingPage() {
           <div className="text-center lg:text-left">
             <p className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
               <MapPin className="h-3.5 w-3.5" />
-              For Eanes ISD families · Grades 3–8
+              For Eanes ISD families · Grades 3–8 through Algebra 1 &amp; Geometry Honors
             </p>
             <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 text-balance sm:text-5xl">
               Eanes math, <span className="text-indigo-600">mastered at your kitchen table.</span>

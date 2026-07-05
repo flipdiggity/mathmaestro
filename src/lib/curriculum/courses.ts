@@ -85,6 +85,25 @@ export const COURSES: CoursePreset[] = [
     grades: [7, 8],
     offeredInGrades: [7],
   },
+  // ── High-school credit courses offered in middle school ──
+  {
+    id: 'eanes-algebra1-honors',
+    label: 'Algebra 1 (Honors)',
+    description:
+      'The full Texas Algebra I course — linear and quadratic functions, systems, exponentials, polynomials and factoring. Taken by accelerated Eanes students in 6th-8th grade for high school credit.',
+    grades: [9],
+    offeredInGrades: [6, 7, 8],
+  },
+  {
+    id: 'eanes-geometry-honors',
+    label: 'Geometry (Honors)',
+    description:
+      'The full Texas Geometry course — proof and logic, transformations, congruence and similarity, right-triangle trig, circles, area/volume and probability. Taken by accelerated Eanes students in 7th-8th grade for high school credit.',
+    grades: [10],
+    // Hidden from pickers until the Geometry curriculum content ships
+    // (empty offeredInGrades = never listed; restore [7, 8] when live).
+    offeredInGrades: [],
+  },
 ];
 
 export function getCourse(courseId: string | null | undefined): CoursePreset | undefined {
