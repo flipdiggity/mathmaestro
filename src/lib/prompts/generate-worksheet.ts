@@ -243,7 +243,7 @@ ${previousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}` : ''}
 
 Return ONLY valid JSON in this exact format (no markdown, no code fences):
 {
-  "title": "Worksheet title describing the topics",
+  "title": "A short title naming the main topics (e.g. 'Slope & Linear Equations'). Do NOT include day numbers, 'Day 2', 'Practice Day', dates, or the child's name.",
   "questions": [
     {
       "number": 1,

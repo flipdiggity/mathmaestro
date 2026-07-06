@@ -394,7 +394,7 @@ function WorksheetHistoryContent() {
                                 <button
                                   type="button"
                                   onClick={() => toggleExpanded(ws.id)}
-                                  className="flex-1 text-left p-4 pl-2 flex items-center gap-3 hover:bg-muted/50 transition-colors rounded-r-xl"
+                                  className="flex-1 min-w-0 text-left p-4 pl-2 flex items-center gap-3 hover:bg-muted/50 transition-colors rounded-r-xl"
                                 >
                                   {isExpanded ? (
                                     <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />

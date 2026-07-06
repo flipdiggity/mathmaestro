@@ -139,14 +139,21 @@ export function selectSequential(
     const m = rec(t);
     return !!m && (m.timesPracticed > 0 || m.mastery > 0);
   };
-  // The advance rule (keep in sync with plan.topicAdvanced).
-  const isAdvanced = (t: CurriculumTopic) => {
-    const m = rec(t);
-    if (!m) return false;
-    if (m.mastery >= MASTERED) return true;
-    const served = m.timesServed ?? 0;
-    return served >= servesToAdvance && (m.timesPracticed === 0 || m.mastery >= 60);
-  };
+  // THE ADVANCE RULE — a topic is finished (frontier moves past it) ONLY when
+  // there is EVIDENCE it's mastered: a photo-graded score >= 80, or a parent
+  // "I already know this" skip-mark (which sets mastery = 100). Serving a topic
+  // on worksheets NEVER advances it on its own.
+  //
+  // This is the fix for the "raced through the whole curriculum in two weeks"
+  // bug: the old rule advanced a topic after 2-3 ungraded exposures, so a kid
+  // who wasn't photo-grading marched ~2.5 topics/day into material they'd never
+  // learned. Now, without grading, the frontier holds at the current window and
+  // the same topics are re-practiced (getting harder each day via difficulty
+  // escalation) until they're graded — you "master before you move on", and
+  // skipping a week for vacation can't skip you ahead. (Keep in sync with
+  // plan.topicAdvanced.)
+  void servesToAdvance;
+  const isAdvanced = (t: CurriculumTopic) => (rec(t)?.mastery ?? -1) >= MASTERED;
 
   // Frontier = first not-yet-advanced topic at or after the start floor.
   let frontier = floorIndex;
@@ -177,14 +184,15 @@ export function selectSequential(
     usedIds.add(t.id);
   }
 
-  // REVIEW — three flavors:
+  // REVIEW — two flavors:
   //   • remediation: GRADED-weak topics (incl. earlier-grade gaps), weighted by
   //     how weak + how long since practice → comes back EASIER.
-  //   • unverified: topics that advanced on exposure alone (served enough,
-  //     never graded) → cycle back for a quick re-check, staler first.
-  //   • maintenance: a GRADED-MASTERED topic not seen in a while, for spaced
-  //     retention → comes back HARDER. Parent-marked "skip" topics
-  //     (mastery=100, timesPracticed=0, never served) are NEVER resurfaced.
+  //   • maintenance (spaced repetition): a GRADED-MASTERED topic not seen in a
+  //     while, resurfaced at EXPANDING intervals (1→2→4→8→16→30 days) for
+  //     retention, then RETIRED once rock-solid (>=95%, 4+ practices). Comes
+  //     back harder. Parent-marked "skip" topics (mastery=100, timesPracticed=0)
+  //     are never resurfaced. This is the spaced-repetition layer — it only has
+  //     material to work with once topics have been graded to mastery.
   // Reserve one slot for maintenance when there are >=2 review slots.
   const daysSince = (t: CurriculumTopic) => {
     const m = rec(t)!;
@@ -201,14 +209,6 @@ export function selectSequential(
   const weak = candidates
     .filter((t) => hasGrades(t) && rec(t)!.mastery < MASTERED)
     .map((t) => ({ topic: t, priority: (100 - rec(t)!.mastery) * daysSince(t), maintenance: false }))
-    .sort((a, b) => b.priority - a.priority);
-  const unverified = candidates
-    .filter((t) => {
-      const m = rec(t)!;
-      const served = m.timesServed ?? 0;
-      return m.timesPracticed === 0 && m.mastery === 0 && served >= servesToAdvance && daysSince(t) >= 2;
-    })
-    .map((t) => ({ topic: t, priority: daysSince(t), maintenance: false }))
     .sort((a, b) => b.priority - a.priority);
   const strong = candidates
     .filter((t) => {
@@ -233,17 +233,12 @@ export function selectSequential(
     if (review.length >= counts.numReview - wantMaintenance) break;
     pushUnique(r);
   }
-  // Unverified topics take remaining non-maintenance slots.
-  for (const r of unverified) {
-    if (review.length >= counts.numReview - wantMaintenance) break;
-    pushUnique(r);
-  }
   for (const r of strong) {
     if (review.length >= counts.numReview) break;
     pushUnique(r);
   }
-  // Backfill any unused slots with more weak, then unverified.
-  for (const r of [...weak, ...unverified]) pushUnique(r);
+  // Backfill any unused slots with more weak (graded-remediation) topics.
+  for (const r of weak) pushUnique(r);
 
   // Fallback: curriculum finished (no current topics) → reinforce the last few.
   if (current.length === 0 && review.length === 0 && seq.length > 0) {

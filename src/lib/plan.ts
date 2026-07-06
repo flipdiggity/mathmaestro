@@ -20,8 +20,6 @@
 import { CurriculumTopic } from './curriculum/types';
 import { AdaptiveTopicState } from './adaptive';
 
-const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
-
 /** Weekdays (Mon-Fri) strictly after `from` through `to`, inclusive of `to`. */
 export function countWeekdays(from: Date, to: Date): number {
   let count = 0;
@@ -37,21 +35,19 @@ export function countWeekdays(from: Date, to: Date): number {
   return count;
 }
 
-/** Mirrors sequencing's advance rule: mastered, or exposed enough without evidence of weakness. */
+/**
+ * Mirrors sequencing's advance rule: a topic counts as "covered" ONLY when
+ * mastered (graded >= 80, or a parent skip-mark which sets mastery = 100).
+ * Exposure alone never counts — so "topics covered" reflects what the child has
+ * actually learned, and the deadline can't push the frontier past unlearned
+ * material.
+ */
 export function topicAdvanced(
   state: AdaptiveTopicState | undefined,
-  servesToAdvance: number,
+  _servesToAdvance?: number,
   masteredThreshold = 80
 ): boolean {
-  if (!state) return false;
-  if (state.mastery >= masteredThreshold) return true;
-  if (
-    state.timesServed >= servesToAdvance &&
-    (state.timesPracticed === 0 || state.mastery >= 60)
-  ) {
-    return true;
-  }
-  return false;
+  return !!state && state.mastery >= masteredThreshold;
 }
 
 export interface PaceParams {
@@ -100,11 +96,14 @@ export function computePaceParams(
     Math.ceil((planEnd.getTime() - now.getTime()) / 86_400_000)
   );
   const paceNeeded = remaining / weekdaysLeft;
-  // Slower plans get 3 exposures per topic; faster plans trade repetition for
-  // coverage (2 exposures) and widen the per-sheet topic window.
-  const servesToAdvance = paceNeeded < 1 ? 3 : 2;
-  const numCurrent = clamp(Math.ceil(paceNeeded * servesToAdvance), 3, 6);
-  const achievablePace = numCurrent / servesToAdvance;
+  // The deadline is ADVISORY ONLY — it informs the "on pace / behind" badge and
+  // the topics-per-week hint, but it must NEVER change how the engine picks
+  // topics. (The old code widened the per-sheet window and lowered the
+  // exposure-to-advance count when "behind", which raced kids through unlearned
+  // material — and got worse the more days you skipped.) numCurrent stays null
+  // so selection uses its fixed default window; onTrack just compares the
+  // required pace to a sane learn-and-master rate (~1 topic/school day).
+  const SUSTAINABLE_PACE = 1; // topics mastered per school day, comfortably
   return {
     planEnd,
     weekdaysLeft,
@@ -112,10 +111,10 @@ export function computePaceParams(
     remaining,
     paceNeeded,
     topicsPerWeek: Math.round(paceNeeded * 5 * 10) / 10,
-    servesToAdvance,
-    numCurrent,
-    achievablePace,
-    onTrack: achievablePace >= paceNeeded,
+    servesToAdvance: DEFAULT_SERVES_TO_ADVANCE,
+    numCurrent: null,
+    achievablePace: SUSTAINABLE_PACE,
+    onTrack: paceNeeded <= SUSTAINABLE_PACE,
   };
 }
 
@@ -133,20 +132,17 @@ export function computePlanStatus(
   planEnd: Date | null | undefined,
   now: Date = new Date()
 ): PlanStatus {
-  // Two-pass: remaining depends on servesToAdvance, which depends on pace,
-  // which depends on remaining. Resolve with the default first, then refine.
-  const remainingWith = (s: number) =>
-    seq.filter((t) => !topicAdvanced(states.get(t.id), s)).length;
-  let params = computePaceParams(remainingWith(DEFAULT_SERVES_TO_ADVANCE), planEnd, now);
-  params = computePaceParams(remainingWith(params.servesToAdvance), planEnd, now);
-
-  const frontier = seq.find((t) => !topicAdvanced(states.get(t.id), params.servesToAdvance));
+  // "Covered" = mastered (graded >= 80 or parent-skipped). Remaining is what's
+  // left to learn — independent of the deadline.
+  const remaining = seq.filter((t) => !topicAdvanced(states.get(t.id))).length;
+  const params = computePaceParams(remaining, planEnd, now);
+  const frontier = seq.find((t) => !topicAdvanced(states.get(t.id)));
   return {
     ...params,
     totalTopics: seq.length,
-    advancedTopics: seq.length - params.remaining,
+    advancedTopics: seq.length - remaining,
     projectedFinishWeekdays:
-      params.remaining > 0 ? Math.ceil(params.remaining / params.achievablePace) : 0,
+      remaining > 0 ? Math.ceil(remaining / params.achievablePace) : 0,
     frontierTopicName: frontier?.name ?? null,
   };
 }

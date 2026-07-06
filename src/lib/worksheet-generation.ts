@@ -302,10 +302,27 @@ export async function generateAdaptiveWorksheet(
 
   const topicIds = selectionList.map((s) => s.topic.id);
 
+  // Clean up model-authored titles: drop practice-day labels ("Day 2",
+  // "Practice Day 2"), collapse repeated "Practice"/"Summer Practice", and trim
+  // stray separators — these leak from the per-topic day-number context and
+  // confuse parents ("why does it say Day 2?").
+  const cleanTitle = (raw: string): string =>
+    raw
+      .replace(/\s*[—–-]?\s*\(?\bpractice\s+day\s+\d+\)?/gi, '')
+      .replace(/\s*[—–-]?\s*\(?\bday\s+\d+\)?/gi, '')
+      // Drop a leading "Summer Practice" / "Summer" / "Practice" label + separator.
+      .replace(/^\s*(summer\s+practice|summer|practice)\s*[:—–-]\s*/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s*[:—–-]\s*$/, '')
+      .replace(/^\s*[:—–-]\s*/, '')
+      .trim();
+  const finalTitle = cleanTitle(parsed.title);
+  parsed.title = finalTitle;
+
   const worksheet = await prisma.worksheet.create({
     data: {
       childId: child.id,
-      title: opts.titlePrefix ? `${opts.titlePrefix}: ${parsed.title}` : parsed.title,
+      title: opts.titlePrefix ? `${opts.titlePrefix}: ${finalTitle}` : finalTitle,
       weekNumber: getWeekNumber(new Date()),
       dayOfWeek: opts.dayOfWeek ?? null,
       questionsJson: JSON.stringify(questions),
