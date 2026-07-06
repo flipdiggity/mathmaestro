@@ -175,6 +175,7 @@ const styles = StyleSheet.create({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function asciifyMath(text: string): string {
+  if (typeof text !== 'string') return '';
   return text
     .replace(/≥/g, '>=')
     .replace(/≤/g, '<=')

@@ -275,7 +275,11 @@ export async function generateAdaptiveWorksheet(
   const resolveTopic = (q: { topicId: string; topicName?: string }): CurriculumTopic | undefined =>
     topicById.get(q.topicId) ?? topicByName.get((q.topicName ?? '').trim().toLowerCase());
 
-  const questions: Question[] = verifiedQuestions.map((q, idx) => {
+  const questions: Question[] = verifiedQuestions
+    // Drop any malformed items the model may emit (missing question/answer) so
+    // one bad entry can't crash the whole sheet at figure-sanitize or PDF time.
+    .filter((q) => typeof q.question === 'string' && q.question.trim().length > 0)
+    .map((q, idx) => {
     const topicMeta = resolveTopic(q);
     if (topicMeta) {
       q.topicId = topicMeta.id;
@@ -305,9 +309,12 @@ export async function generateAdaptiveWorksheet(
   // Clean up model-authored titles: drop practice-day labels ("Day 2",
   // "Practice Day 2"), collapse repeated "Practice"/"Summer Practice", and trim
   // stray separators — these leak from the per-topic day-number context and
-  // confuse parents ("why does it say Day 2?").
-  const cleanTitle = (raw: string): string =>
-    raw
+  // confuse parents ("why does it say Day 2?"). Guarded: the model occasionally
+  // omits the title field entirely (or returns null) — never crash the sheet,
+  // fall back to a title built from the topic names.
+  const cleanTitle = (raw: unknown): string => {
+    if (typeof raw !== 'string' || !raw.trim()) return '';
+    return raw
       .replace(/\s*[—–-]?\s*\(?\bpractice\s+day\s+\d+\)?/gi, '')
       .replace(/\s*[—–-]?\s*\(?\bday\s+\d+\)?/gi, '')
       // Drop a leading "Summer Practice" / "Summer" / "Practice" label + separator.
@@ -316,7 +323,15 @@ export async function generateAdaptiveWorksheet(
       .replace(/\s*[:—–-]\s*$/, '')
       .replace(/^\s*[:—–-]\s*/, '')
       .trim();
-  const finalTitle = cleanTitle(parsed.title);
+  };
+  const topicNameTitle = () => {
+    const names = selectionList
+      .filter((s) => s.reason === 'current' || s.reason === 'new')
+      .map((s) => s.topic.name)
+      .slice(0, 3);
+    return names.length ? names.join(', ') : 'Math Practice';
+  };
+  const finalTitle = cleanTitle(parsed.title) || topicNameTitle();
   parsed.title = finalTitle;
 
   const worksheet = await prisma.worksheet.create({
