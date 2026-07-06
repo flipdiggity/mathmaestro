@@ -361,9 +361,15 @@ export function getVideosForTopic(topic: {
 
 /** Absolute URL of the "watch before you work" page for a worksheet (QR target). */
 export function watchPageUrl(worksheetId: string): string {
-  const base = (
-    process.env.NEXT_PUBLIC_APP_URL || 'https://mathmaestro-tan.vercel.app'
-  ).replace(/\/+$/, '');
+  // Sanitize hard: a Vercel env var once carried a literal "\n" at the end
+  // of the URL, which poisoned every printed QR code ("opens the browser but
+  // goes nowhere"). Strip whitespace AND literal backslash-escapes, and fall
+  // back to the canonical production URL if the result isn't a clean URL.
+  const raw = (process.env.NEXT_PUBLIC_APP_URL ?? '')
+    .replace(/\\[nrt]/g, '')
+    .replace(/\s+/g, '')
+    .replace(/\/+$/, '');
+  const base = /^https?:\/\/[^\s/]+$/.test(raw) ? raw : 'https://mathmaestro-tan.vercel.app';
   return `${base}/watch/${worksheetId}`;
 }
 
