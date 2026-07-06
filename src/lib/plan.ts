@@ -136,13 +136,20 @@ export function computePlanStatus(
   // left to learn — independent of the deadline.
   const remaining = seq.filter((t) => !topicAdvanced(states.get(t.id))).length;
   const params = computePaceParams(remaining, planEnd, now);
-  const frontier = seq.find((t) => !topicAdvanced(states.get(t.id)));
+  const advancedTopics = seq.length - remaining;
+  // The plan is an encouraging GUIDE, not a deadline whip. Don't show a
+  // pass/fail "behind pace" badge until the child has actually mastered
+  // something to measure a trajectory from — a fresh start shows a neutral
+  // "getting started", not a red alarm on day one.
+  const onTrack = advancedTopics === 0 ? null : params.onTrack;
+  const frontierTopic = seq.find((t) => !topicAdvanced(states.get(t.id)));
   return {
     ...params,
+    onTrack,
     totalTopics: seq.length,
-    advancedTopics: seq.length - remaining,
+    advancedTopics,
     projectedFinishWeekdays:
       remaining > 0 ? Math.ceil(remaining / params.achievablePace) : 0,
-    frontierTopicName: frontier?.name ?? null,
+    frontierTopicName: frontierTopic?.name ?? null,
   };
 }
