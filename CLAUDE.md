@@ -6,7 +6,14 @@ AI-powered math worksheet generator. Kids get personalized printed worksheets al
 **Tech stack:** Next.js 14, Prisma (Neon Postgres), Anthropic Claude API (`claude-sonnet-5` for generation + vision grading; `ANTHROPIC_MODEL`/`ANTHROPIC_EFFORT` env overrides), @react-pdf/renderer (+ `qrcode`), Resend (daily email), deployed on Vercel. Clerk + Stripe exist but are dormant (see App modes).
 
 **Live URL:** https://mathmaestro-tan.vercel.app
-**Repo:** https://github.com/flipdiggity/mathmaestro
+**Repo:** https://github.com/flipdiggity/mathmaestro (PUBLIC — assume anything committed here is world-readable)
+
+## Secrets — never put a real key in this file
+The repo is public. Live keys belong in `.env` (gitignored) locally and in Vercel env vars in prod. Placeholders only in `.env.example`. Never paste a real key into CLAUDE.md, README, a commit message, or a code comment — not even in an example command.
+
+A Google Gemini key was hardcoded in this file's "To retry" b-roll line and pushed publicly; Google's scanner flagged it. Rotated and deleted July 12, 2026. Note that removing a key from HEAD does NOT unexpose it — it stays in git history forever. Rotation is the only real fix.
+
+Scripts read keys from env (`scripts/generate-broll.sh` uses `${GEMINI_API_KEY:?}`; the script and `broll-clips/` are gitignored). To run it: `bash scripts/generate-broll.sh` with `GEMINI_API_KEY` exported, or `set -a; source .env; set +a` first.
 
 ## App modes
 `NEXT_PUBLIC_APP_MODE` env var, build-time inlined (`src/lib/mode.ts`):
